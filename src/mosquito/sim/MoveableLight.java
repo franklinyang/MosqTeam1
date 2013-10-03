@@ -86,18 +86,38 @@ public class MoveableLight extends Light {
 		//diagonal slope it should traverse as its first argument
 		//up is true if it is traversing upwards and false if it is traversing
 		//downwards
-		double xDiff = wall.getX1()-wall.getX2();
-		double yDiff = wall.getY1()-wall.getY2();
-		double dist = Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2));
-		double cosT = xDiff/dist;
-		double sinT = yDiff/dist;
-		double xMove = Math.pow(cosT, 2);
-		double yMove = Math.pow(sinT, 2);
-		if (corner == Corner.NW || corner == Corner.NE) this.y-=yMove;
-		else this.y+=yMove;
-		if (corner == Corner.NE || corner == Corner.SE) this.x+=xMove;
-		else this.x-=xMove;
-		return true;
+		if (this.x < 100 && this.x > 0 && this.y < 100 && this.y > 0) {
+			double xDiff = wall.getX1()-wall.getX2();
+			double yDiff = wall.getY1()-wall.getY2();
+			double dist = Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2));
+			double cosT = xDiff/dist;
+			double sinT = yDiff/dist;
+			double xMove = Math.pow(cosT, 2);
+			double yMove = Math.pow(sinT, 2);
+			switch (corner) {
+				case NW: if (isLegalMove(this.x-xMove, this.y-yMove)) {
+					this.y-=yMove; 
+					this.x-=xMove;
+					return true;
+				} else return false;
+				case NE: if (isLegalMove(this.x+xMove, this.y-yMove)) {
+					this.y-=yMove; 
+					this.x+=xMove;
+					return true;
+				} else return false;
+				case SW: if (isLegalMove(this.x-xMove, this.y+yMove)) {
+					this.y+=yMove; 
+					this.x-=xMove;
+					return true;
+				} else return false;
+				case SE: if (isLegalMove(this.x+xMove, this.y+yMove)) {
+					this.y+=yMove; 
+					this.x+=xMove;
+					return true;
+				} else return false;
+				default: return false;
+			}
+		} return false;
 	}
 	
 	public boolean goTo(double x, double y) {
