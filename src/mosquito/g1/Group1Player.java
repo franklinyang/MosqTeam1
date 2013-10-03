@@ -1,133 +1,288 @@
 package mosquito.g1;
 
-import java.awt.Color;
-import java.awt.Graphics;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
-
-import org.apache.log4j.Logger;
+import java.util.Stack;
 
 import mosquito.sim.Collector;
 import mosquito.sim.Light;
 import mosquito.sim.MoveableLight;
 
-
+import org.apache.log4j.Logger;
 
 public class Group1Player extends mosquito.sim.Player {
 
-    private int numLights;
-    private Point2D.Double lastLight;
-    private Logger log = Logger.getLogger(this.getClass()); // for logging
-    
-    @Override
-    public String getName() {
-        return "Random Player";
-    }
-    
-    private Set<Light> lights;
-    private Set<Line2D> walls;
-    
-    /*
-     * This is called when a new game starts. It is passed the set
-     * of lines that comprise the different walls, as well as the 
-     * maximum number of lights you are allowed to use.
-     * 
-     * The return value is a set of lines that you would like to have drawn on the screen.
-     * These lines don't actually affect gameplay, they're just there so you can have some
-     * visual clue as to what's happening in the simulation.
-     */
-    @Override
-    public ArrayList<Line2D> startNewGame(Set<Line2D> walls, int numLights) {
-        this.numLights = numLights;
-        this.walls = walls;
+	private int numLights;
+	private Point2D.Double lastLight;
+	private int numRounds = 0;
+	private Logger log = Logger.getLogger(this.getClass()); // for logging
+	
+	@Override
+	public String getName() {
+		return "Random Player";
+	}
+	
+	private Set<Light> lights;
+	private Set<Line2D> walls;
+	
+	private HashMap<Light, Boolean> movementMap = new HashMap<Light, Boolean>();
+	private HashMap<Integer, Integer> numLightsToSpacingMap = new HashMap<Integer, Integer>();
+	private HashMap<Integer, Integer> numLightsToMaxRoundsMap = new HashMap<Integer, Integer>();
+	
+	private Stack<Integer> problemStack = new Stack<Integer>();
+	
+	private MoveableLight l1;
+	private MoveableLight l2;
+	private char l1MoveMode = 'R';
+	private char l2MoveMode = 'R';
+	/*
+	 * This is called when a new game starts. It is passed the set
+	 * of lines that comprise the different walls, as well as the 
+	 * maximum number of lights you are allowed to use.
+	 * 
+	 * The return value is a set of lines that you would like to have drawn on the screen.
+	 * These lines don't actually affect gameplay, they're just there so you can have some
+	 * visual clue as to what's happening in the simulation.
+	 */
+	@Override
+	public ArrayList<Line2D> startNewGame(Set<Line2D> walls, int numLights) {
+		this.numLights = numLights;
+		this.walls = walls;
+		numLightsToSpacingMap.put(10, 6);
+		numLightsToSpacingMap.put(9, 7);
+		numLightsToSpacingMap.put(8, 8);
+		numLightsToSpacingMap.put(7, 10);
+		numLightsToSpacingMap.put(6, 13);
+		numLightsToSpacingMap.put(5, 18);
+		numLightsToSpacingMap.put(4, 22);
+		numLightsToSpacingMap.put(3, 33);
+		
+		numLightsToMaxRoundsMap.put(10, 150);
+		numLightsToMaxRoundsMap.put(9, 150);
+		numLightsToMaxRoundsMap.put(8, 150);
+		numLightsToMaxRoundsMap.put(7, 150);
+		numLightsToMaxRoundsMap.put(6, 150);
+		numLightsToMaxRoundsMap.put(5, 150);
+		numLightsToMaxRoundsMap.put(4, 150);
+        numLightsToMaxRoundsMap.put(3, 160);
+		
+		ArrayList<Line2D> lines = new ArrayList<Line2D>();
+		Line2D line = new Line2D.Double(30, 30, 80, 80);
+		lines.add(line);
+		return lines;
+	}
 
-        ArrayList<Line2D> lines = new ArrayList<Line2D>();
-        Line2D line = new Line2D.Double(30, 30, 80, 80);
-        lines.add(line);
-        return lines;
-    }
 
-
-    /*
-     * This is used to determine the initial placement of the lights.
-     * It is called after startNewGame.
-     * The board tells you where the mosquitoes are: board[x][y] tells you the
-     * number of mosquitoes at coordinate (x, y)
-     */
-    public Set<Light> getLights(int[][] board) {
-        // Initially place the lights randomly, and put the collector next to the last light
-
-        lights = new HashSet<Light>();
-        Random r = new Random();
-        for(int i = 0; i<numLights;i++)
-        {
-            // this player just picks random points for the Light
-            lastLight = new Point2D.Double(r.nextInt(100), r.nextInt(100));
-            
-            /*
-             * The arguments to the Light constructor are: 
-             * - X coordinate
-             * - Y coordinate
-             * - whether or not the light is on
-             */
-            MoveableLight l = new MoveableLight(lastLight.getX(),lastLight.getY(), true);
-
-            log.trace("Positioned a light at (" + lastLight.getX() + ", " + lastLight.getY() + ")");
-            lights.add(l);
+	/*
+	 * This is used to determine the initial placement of the lights.
+	 * It is called after startNewGame.
+	 * The board tells you where the mosquitoes are: board[x][y] tells you the
+	 * number of mosquitoes at coordinate (x, y)
+	 */
+	public Set<Light> getLights(int[][] board) {
+		// Initially place the lights randomly, and put the collector next to the last light
+	    if(numLights > 2) {
+    	    int x = 18; 
+    	    int y = 18;
+    		lights = new HashSet<Light>();
+    		for(int i = 0; i < numLights; i++) {
+    		    lastLight = new Point2D.Double(x, y);
+    		    x += numLightsToSpacingMap.get(numLights);
+    		    y += numLightsToSpacingMap.get(numLights);
+    		    MoveableLight l = new MoveableLight(lastLight.getX(), lastLight.getY(), true);
+    		    lights.add(l);
+    		    movementMap.put(l, false);
+    		}
+	    }
+	    else {
+	        int x1 = 15;
+	        int y1 = 15;
+	        
+	        int x2 = 36;
+	        int y2 = 36;
+	        lights = new HashSet<Light>();
+	        l1 = new MoveableLight(x1, y1, true);
+	        l2 = new MoveableLight(x2, y2, true);
+	        lights.add(l1);
+	        lights.add(l2);
+	    }
+		return lights;
+	}
+	
+	/*
+	 * This is called at the beginning of each step (before the mosquitoes have moved)
+	 * If your Set contains additional lights, an error will occur. 
+	 * Also, if a light moves more than one space in any direction, an error will occur.
+	 * The board tells you where the mosquitoes are: board[x][y] tells you the
+	 * number of mosquitoes at coordinate (x, y)
+	 */
+	public Set<Light> updateLights(int[][] board) {
+		
+	    numRounds++;
+	    
+	    if(numLights > 2) {
+    	    if(numRounds < numLightsToMaxRoundsMap.get(numLights)) {
+        		for (Light l : lights) {
+        			MoveableLight ml = (MoveableLight)l;
+        			if(ml.getX() < 10 || !movementMap.get(ml)) {
+        			    ml.moveRight();
+        			    movementMap.put(ml, false);
+        			}
+        			if(board[0].length - ml.getX() < 10 || movementMap.get(ml)) {
+        			    ml.moveLeft();
+        			    movementMap.put(ml, true);
+        			}
+        		}
+    	    }
+    	    else {
+    	        for(Light l: lights) {
+    	            MoveableLight ml = (MoveableLight) l;
+    	            if(ml.getY() < 50 && ml.getX() > 40 && ml.getX() < 60) {
+    	                ml.moveDown();
+    	            }
+    	            else if(ml.getY() > 50 && ml.getX() > 40 && ml.getX() < 60) {
+    	                ml.moveUp();
+    	            }
+    	            else if(ml.getY() == 50) {
+    	                if(ml.getX() == 50) {
+    	                    continue;
+    	                }
+    	                else if(ml.getX() > 40 && ml.getX() < 50) {
+    	                    ml.moveRight();
+    	                }
+    	                else if(ml.getX() > 50 && ml.getX() < 60) {
+    	                    ml.moveLeft();
+    	                }
+    	            }
+    	            else {
+    	                if(ml.getX() > 50) {
+    	                    ml.moveLeft();
+    	                }
+    	                else {
+    	                    ml.moveRight();
+    	                }
+    	            }
+    	        }
+    	    }
+	    }
+	    else {
+	        if(numRounds < 250) {
+    	        twoLightsHelperL1(numRounds, board);
+    	        twoLightsHelperL2(numRounds, board);
+	        }
+	        else {
+    	        if(l1.getX() == 50 && l1.getY() < 50) {
+    	            l1.moveDown();
+    	        }
+    	        else if(l1.getX() == 50 && l1.getY() > 50) {
+    	            l1.moveUp();
+    	        }
+    	        else if(l1.getY() == 50 && l1.getX() < 50) {
+    	            l1.moveRight();
+    	        }
+    	        else if(l1.getY() == 50 && l1.getX() > 50) {
+    	            l1.moveLeft();
+    	        }
+    	        else if(l1.getX() == 50 && l1.getY() == 50) {
+    	            
+    	        }
+    	        else {
+    	            twoLightsHelperL1(numRounds, board);
+    	        }
+    	        
+    	        if(l2.getX() == 50 && l2.getY() < 50) {
+                    l2.moveDown();
+                }
+                else if(l2.getX() == 50 && l2.getY() > 50) {
+                    l2.moveUp();
+                }
+                else if(l2.getY() == 50 && l2.getX() < 50) {
+                    l2.moveRight();
+                }
+                else if(l2.getY() == 50 && l2.getX() > 50) {
+                    l2.moveLeft();
+                }
+                else if(l2.getX() == 50 && l2.getY() == 50) {
+                    
+                }
+                else {
+                    twoLightsHelperL2(numRounds, board);
+                }
+	        }
+	    }
+		
+		return lights;
+	}
+	
+	public void twoLightsHelperL2(int numRounds, int[][] board) {
+        if(l2.getX() == 36 && l2.getY() == (board[0].length - 36)) {
+            l2MoveMode = 'U';
+            l2.moveUp();
         }
-        
-        return lights;
-    }
-    
-    /*
-     * This is called at the beginning of each step (before the mosquitoes have moved)
-     * If your Set contains additional lights, an error will occur. 
-     * Also, if a light moves more than one space in any direction, an error will occur.
-     * The board tells you where the mosquitoes are: board[x][y] tells you the
-     * number of mosquitoes at coordinate (x, y)
-     */
-    public Set<Light> updateLights(int[][] board) {
-        
-        Random r = new Random();
-
-        for (Light l : lights) {
-            MoveableLight ml = (MoveableLight)l;
-
-            // randomly move it in one direction
-            // these methods return true if the move is allowed, false otherwise
-            // a move is not allowed if it would go beyond the world boundaries
-            // you can get the light's position with getX() and getY()
-            switch (r.nextInt(4)) {
-            case 0: ml.moveUp(); break;
-            case 1: ml.moveDown(); break;
-            case 2: ml.moveLeft(); break;
-            case 3: ml.moveRight(); break;
+        else if(l2.getX() == 36 && l2.getY() == 36) {
+            l2MoveMode = 'R';
+            l2.moveRight();
+        }
+        else if(l2.getX() == (board[0].length - 36) && l2.getY() == 36) {
+            l2MoveMode = 'D';
+            l2.moveDown();
+        }
+        else if(l2.getX() == (board[0].length - 36) && l2.getY() == (board.length -36)) {
+            l2MoveMode = 'L';
+            l2.moveLeft();
+        }
+        else {
+            switch(l2MoveMode) {
+            case 'L': l2.moveLeft(); break;
+            case 'R': l2.moveRight(); break;
+            case 'U': l2.moveUp(); break;
+            case 'D': l2.moveDown(); break;
             }
-
-            // randomly turn the light off or on
-            // you don't have to call these each time, of course: a light that's on stays on
-            // you can query the state of the light with the isOn() method
-            if (r.nextInt(2) == 0) ml.turnOff();
-            else ml.turnOn();
         }
-        
-        return lights;
-    }
+	}
+	
+	public void twoLightsHelperL1(int numRounds, int[][] board) {
+	    if(l1.getX() == 15 && l1.getY() == (board[0].length - 15)) {
+            l1MoveMode = 'U';
+            l1.moveUp();
+        }
+        else if(l1.getX() == 15 && l1.getY() == 15) {
+            l1MoveMode = 'R';
+            l1.moveRight();
+        }
+        else if(l1.getX() == (board[0].length - 15) && l1.getY() == 15) {
+            l1MoveMode = 'D';
+            l1.moveDown();
+        }
+        else if(l1.getX() == (board[0].length - 15) && l1.getY() == (board.length -15)) {
+            l1MoveMode = 'L';
+            l1.moveLeft();
+        }
+        else {
+            switch(l1MoveMode) {
+            case 'L': l1.moveLeft(); break;
+            case 'R': l1.moveRight(); break;
+            case 'U': l1.moveUp(); break;
+            case 'D': l1.moveDown(); break;
+            }
+        }
+	}
 
-    /*
-     * Currently this is only called once (after getLights), so you cannot
-     * move the Collector.
-     */
-    @Override
-    public Collector getCollector() {
-        // this one just places a collector next to the last light that was added
-        Collector c = new Collector(lastLight.getX()+1,lastLight.getY() +1);
-        log.debug("Positioned a Collector at (" + (lastLight.getX()+1) + ", " + (lastLight.getY()+1) + ")");
-        return c;
-    }
+	/*
+	 * Currently this is only called once (after getLights), so you cannot
+	 * move the Collector.
+	 */
+	@Override
+	public Collector getCollector() {
+		// this one just places a collector next to the last light that was added
+		Collector c = new Collector(100,50);
+		return c;
+	}
 
 }
+
