@@ -186,6 +186,9 @@ public final class GameEngine
 						System.exit(-1);
 					}
 					
+					// add the current point to this light's list of all points
+					ArrayList<Point2D> myPoints = board.allPoints.get(i);
+					myPoints.add(new Point2D.Double(a.getX(), a.getY()));
 				}
 			}
 			board.setLights(lights);
@@ -478,6 +481,12 @@ public final class GameEngine
 			board.load(config.getSelectedBoard());
 			board.mosquitosCaught = 0;
 			board.setLights(new HashSet<Light>()); // TODO: do we need this?
+			
+			board.allPoints = new ArrayList<ArrayList<Point2D>>();
+			for (int i = 0; i < getConfig().getNumLights(); i++) {
+				board.allPoints.add(new ArrayList<Point2D>());
+			}
+
 			
 			initDone = false;
 			curPlayer = config.getPlayerClass().newInstance();

@@ -40,6 +40,8 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import org.apache.xerces.parsers.DOMParser;
+
+//import sun.security.krb5.Config;
 import dom.Writer;
 
 /**
@@ -456,10 +458,6 @@ public final class Board {
 
 	private void init() {
 		powerUsed = 0;
-		allPoints = new ArrayList<ArrayList<Point2D>>();
-		for (int i = 0; i < 5; i++) {
-			allPoints.add(new ArrayList<Point2D>());
-		}
 
 	}
 
