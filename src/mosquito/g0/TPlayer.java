@@ -103,6 +103,7 @@ public class TPlayer extends mosquito.sim.Player {
 			// a move is not allowed if it would go beyond the world boundaries
 			// you can get the light's position with getX() and getY()
 			Point2D location = l.getLocation();
+			
 			switch (phase) {
 			case 0: 
 				if (location.getX() > 80) phase++;
