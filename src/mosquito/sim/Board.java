@@ -41,7 +41,7 @@ import org.xml.sax.SAXException;
 
 import org.apache.xerces.parsers.DOMParser;
 
-import sun.security.krb5.Config;
+//import sun.security.krb5.Config;
 import dom.Writer;
 
 /**
