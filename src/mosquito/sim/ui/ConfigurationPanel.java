@@ -124,9 +124,9 @@ public final class ConfigurationPanel extends JPanel implements ChangeListener, 
 		
 		
 		stopSlider = new JSlider(0, 100);
-		stopSlider.setValue(50);
+		stopSlider.setValue(100);
 		stopSlider.addChangeListener(this);
-		stopLabel = new JLabel("50%");
+		stopLabel = new JLabel("100%");
 		stopLabel.setFont(config_font);
 		panel = new JPanel(new FlowLayout());
 		panel.add(new JLabel("Capture Target (0 - 100%):"));
@@ -208,15 +208,15 @@ public final class ConfigurationPanel extends JPanel implements ChangeListener, 
 		this.add(panel);
 
 		speedSlider = new JSlider(0, 1000);
-		speedSlider.setValue(0);
+		speedSlider.setValue(100);
 		panel = new JPanel(new FlowLayout());
 		panel.add(new JLabel("Delay (0 - 1000ms):"));
 		panel.add(speedSlider);
 		layout.setConstraints(panel, c);
 		this.add(panel);
 		
-		mouseCoords = new JLabel("Mouse: N/A");
-		add(mouseCoords);
+		//mouseCoords = new JLabel("Mouse: N/A");
+		//add(mouseCoords);
 		
 		
 	}

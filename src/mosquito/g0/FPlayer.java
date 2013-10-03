@@ -76,6 +76,7 @@ public class FPlayer extends mosquito.sim.Player {
 	public Set<Light> getLights(int[][] board) {
 
 		lights = new HashSet<Light>();
+		// lights.add(new MoveableLight(49,50,true));
 		for(int i = 0; i<numLights;i++)
 		{
 			lastLight = new Point2D.Double(10, 10);

@@ -15,14 +15,25 @@ public class Mosquito {
 	}
 	public void moveInDirection(double d, HashSet<Line2D> walls) {
 		d = d -30 + GameConfig.random.nextInt(60);
-		if(location.getY() - Math.sin(d*Math.PI/180) < 0 || location.getY() - Math.sin(d*Math.PI/180) > 100 || location.getX() + Math.cos(d*Math.PI/180) > 100 || location.getX() + Math.cos(d*Math.PI/180) < 0)
-			return;
-		Line2D.Double pathLine = new Line2D.Double(location.getX(),location.getY(),location.getX() + Math.cos(d*Math.PI/180), location.getY() - Math.sin(d*Math.PI/180));
+
+		double newX = location.getX() + Math.cos(d*Math.PI/180);
+		double newY = location.getY() - Math.sin(d*Math.PI/180);
+		
+		// if the path takes them outside the limits of the world, have them move in the other direction
+		if (newX < 0 || newX > 100) {
+			newX = location.getX() - Math.cos(d*Math.PI/180);
+		}
+		if (newY < 0 || newY > 100) {
+			newY = location.getY() + Math.sin(d*Math.PI/180);
+		}
+
+		// TODO: if their path would have them cross a wall, have them move in another direction
+		Line2D.Double pathLine = new Line2D.Double(location.getX(),location.getY(),newX, newY);
 		for(Line2D l : walls)
 		{
 			if(l.intersectsLine(pathLine))
 				return;
 		}
-		location.setLocation(location.getX() + Math.cos(d*Math.PI/180), location.getY() - Math.sin(d*Math.PI/180));
+		location.setLocation(newX, newY);
 	}
 }

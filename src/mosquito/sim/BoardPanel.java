@@ -238,9 +238,10 @@ public final class BoardPanel extends JPanel implements MouseListener,
 							(int) Board.toScreenSpace(1));
 				
 				// draw the trail
-				g2D.setColor(colors[counter]);
+				int index = counter % colors.length;
+				g2D.setColor(colors[index]);
 				ArrayList<Point2D> myPoints = board.allPoints.get(counter);
-				myPoints.add(new Point2D.Double(l.getX(), l.getY()));
+				//myPoints.add(new Point2D.Double(l.getX(), l.getY()));
 				for (int i = 0; i < myPoints.size()-1;i++) {
 					int oldX = (int) Board.toScreenSpace(myPoints.get(i).getX());
 					int oldY = (int) Board.toScreenSpace(myPoints.get(i).getY());
