@@ -14,10 +14,11 @@ import org.apache.log4j.Logger;
 import mosquito.sim.Collector;
 import mosquito.sim.Light;
 import mosquito.sim.MoveableLight;
+import mosquito.sim.MoveableLight.Corner;
 
 
 
-public class TPlayer extends mosquito.sim.Player {
+public class TestPlayer extends mosquito.sim.Player {
 
 	private int numLights;
 	private Point2D.Double lastLight;
@@ -25,12 +26,11 @@ public class TPlayer extends mosquito.sim.Player {
 	
 	@Override
 	public String getName() {
-		return "bears";
+		return "Random Player";
 	}
 	
 	private Set<Light> lights;
 	private Set<Line2D> walls;
-	private int phase = 0;
 	
 	/*
 	 * This is called when a new game starts. It is passed the set
@@ -67,7 +67,7 @@ public class TPlayer extends mosquito.sim.Player {
 		for(int i = 0; i<numLights;i++)
 		{
 			// this player just picks random points for the Light
-			lastLight = new Point2D.Double(20, i*100/numLights+50/(numLights));
+			lastLight = new Point2D.Double(r.nextInt(100), r.nextInt(100));
 			
 			/*
 			 * The arguments to the Light constructor are: 
@@ -75,8 +75,6 @@ public class TPlayer extends mosquito.sim.Player {
 			 * - Y coordinate
 			 * - whether or not the light is on
 			 */
-			
-			
 			MoveableLight l = new MoveableLight(lastLight.getX(),lastLight.getY(), true);
 
 			log.trace("Positioned a light at (" + lastLight.getX() + ", " + lastLight.getY() + ")");
@@ -94,6 +92,8 @@ public class TPlayer extends mosquito.sim.Player {
 	 * number of mosquitoes at coordinate (x, y)
 	 */
 	public Set<Light> updateLights(int[][] board) {
+		
+		Random r = new Random();
 
 		for (Light l : lights) {
 			MoveableLight ml = (MoveableLight)l;
@@ -102,34 +102,12 @@ public class TPlayer extends mosquito.sim.Player {
 			// these methods return true if the move is allowed, false otherwise
 			// a move is not allowed if it would go beyond the world boundaries
 			// you can get the light's position with getX() and getY()
-			Point2D location = l.getLocation();
-			
-			switch (phase) {
-			case 0: 
-				if (location.getX() > 80) phase++;
-				ml.moveRight();
-				break;
-			case 1: 
-				if (location.getX() < 20) phase++;
-				ml.moveLeft();
-				break;
-			case 2:
-				if (location.getX() < 50) ml.moveRight(); 
-				else if (location.getY() > 50) ml.moveUp(); 
-				else if (location.getY() < 50) ml.moveDown();
-				break;
-			case 3:
-				Random r = new Random();
-				switch (r.nextInt(4)) {
-				case 0: ml.moveUp(); break;
-				case 1: ml.moveDown(); break;
-				case 2: ml.moveLeft(); break;
-				case 3: ml.moveRight(); break;
-				}
-				break;
-			default: ml.moveLeft();
-			}
-	
+			Line2D line = new Line2D.Double(50,50,100,0);
+			ml.moveDiag(line, Corner.NE);
+			//ml.goTo(100, 100);
+			// randomly turn the light off or on
+			// you don't have to call these each time, of course: a light that's on stays on
+			// you can query the state of the light with the isOn() method
 		}
 		
 		return lights;
@@ -142,7 +120,8 @@ public class TPlayer extends mosquito.sim.Player {
 	@Override
 	public Collector getCollector() {
 		// this one just places a collector next to the last light that was added
-		Collector c = new Collector(50,50);
+		Collector c = new Collector(lastLight.getX()+1,lastLight.getY() +1);
+		log.debug("Positioned a Collector at (" + (lastLight.getX()+1) + ", " + (lastLight.getY()+1) + ")");
 		return c;
 	}
 
