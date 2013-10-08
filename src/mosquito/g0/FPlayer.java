@@ -6,7 +6,7 @@ import java.awt.Rectangle;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
-import java.awt.geom.Line2D.Double;
+import java.awt.geom.Line2D;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -156,7 +156,7 @@ public class FPlayer extends mosquito.sim.Player {
 		Line2D d = new Line2D.Double(lL, lR);
 		
 		Section boundary = new Section(l, r, u, d);
-		ArrayList<Number.Double> sortedVerticalLines = new ArrayList<Number.Double>();
+		ArrayList<Double> sortedVerticalLines = new ArrayList<Double>();
 		boardSections.add(boundary);
 		
 		for (Line2D w : walls) {
