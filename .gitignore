@@ -15,6 +15,7 @@
 *.*-swp
 *.db
 *.jar
+*.class
 *Kopie*
 nbproject/private
 one-jar
