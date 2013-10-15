@@ -79,7 +79,7 @@ public final class BoardPanel extends JPanel implements MouseListener,
 
 
 	
-	private final Color[] colors = {Color.PINK, Color.GREEN, Color.BLUE, Color.ORANGE, Color.MAGENTA};
+	private final Color[] colors = {Color.PINK, Color.GREEN, Color.BLUE, Color.ORANGE, Color.MAGENTA, Color.YELLOW, Color.CYAN, Color.WHITE, Color.RED, Color.GRAY};
 	
 	/**
 	 * Makes sure that there are no enclosed/unreachable

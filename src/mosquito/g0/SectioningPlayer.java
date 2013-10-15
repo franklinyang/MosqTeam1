@@ -143,7 +143,7 @@ public class SectioningPlayer extends mosquito.sim.Player {
 			case 4: ml.goTo((sections.get(4).maxX+sections.get(4).minX)/2, (sections.get(4).maxY+sections.get(4).minY)/2);
 				break;
 			default: ml.goTo(50, 50);
-			}
+			} if (counter < numberOfSections-1) counter++;
 
 			// randomly turn the light off or on
 			// you don't have to call these each time, of course: a light that's on stays on
@@ -214,6 +214,7 @@ public class SectioningPlayer extends mosquito.sim.Player {
 		    } 
 		    if (!hasComboBeenSeen) {
 		        Section newSection = new Section();
+		        newSection.boolCombo=pointLineRelationships[x][y];
 		        newSection.xPoints.add(x);
 		        newSection.yPoints.add(y);
 		        newSection.maxX = x;

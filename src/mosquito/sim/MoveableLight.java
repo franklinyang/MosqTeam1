@@ -40,7 +40,7 @@ public class MoveableLight extends Light {
 	public boolean moveUp() {
 		if (this.y > 0) {
 			if (isLegalMove(this.x, this.y-1)) {
-				this.y--;
+				this.y = this.y - 0.99;
 				return true;
 			}
 			else return false;
@@ -51,7 +51,7 @@ public class MoveableLight extends Light {
 	public boolean moveDown() {
 		if (this.y < 100) {
 			if (isLegalMove(this.x, this.y+1)) {
-				this.y++;
+				this.y = this.y + 0.99;
 				return true;
 			}
 			else return false;
@@ -62,7 +62,7 @@ public class MoveableLight extends Light {
 	public boolean moveLeft() {
 		if (this.x > 0) {
 			if (isLegalMove(this.x-1, this.y)) {
-				this.x--;
+				this.x = this.x - 0.99;
 				return true;
 			}
 			else return false;
@@ -73,13 +73,51 @@ public class MoveableLight extends Light {
 	public boolean moveRight() {
 		if (this.x < 100) {
 			if (isLegalMove(this.x+1, this.y)) {
-				this.x++;
+				this.x = this.x + 0.99;
 				return true;
 			}
 			else return false;
 		}
 		return false;
 	}
+	
+	public boolean moveDiag(Line2D wall, boolean up) {
+        //This function takes the coordinates of the line that defines the 
+        //diagonal slope it should traverse as its first argument
+        //up is true if it is traversing upwards and false if it is traversing
+        //downwards
+        double xDiff = wall.getX1()-wall.getX2();
+        double yDiff = wall.getY1()-wall.getY2();
+        boolean yDiffIsPositive = (yDiff > 0);
+        double dist = Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2));
+        double cosT = xDiff/dist;
+        double sinT = yDiff/dist;
+        double xMove = Math.pow(cosT, 2);
+        double yMove = Math.pow(sinT, 2);
+        if (up) { 
+            if (isLegalMove(this.x+xMove, this.y+yMove)) {
+                if (yDiffIsPositive) {
+                    this.x+=xMove;
+                    this.y+=yMove;
+                } else {
+                    this.x-=xMove;
+                    this.y-=yMove;
+                }
+                return true;
+            } else return false;
+        } else { 
+            if (isLegalMove(this.x+xMove, this.y+yMove)) {
+                if (!yDiffIsPositive) {
+                    this.x+=xMove;
+                    this.y+=yMove;
+                } else {
+                    this.x-=xMove;
+                    this.y-=yMove;
+                }
+                return true;
+            } else return false;
+        } 
+    }
 	
 	public boolean moveDiag(Line2D wall, Corner corner) {
 		//This function takes the coordinates of the line that defines the 

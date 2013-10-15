@@ -22,9 +22,11 @@ import mosquito.sim.Collector;
 import mosquito.sim.Light;
 import mosquito.sim.MoveableLight;
 
-
+import org.jgrapht.alg.*;
 
 public class FPlayer extends mosquito.sim.Player {
+	
+	CycleDetector a;
 	
 	class Section {
 		Line2D l;
