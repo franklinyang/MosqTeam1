@@ -4,7 +4,13 @@ import java.awt.geom.Line2D;
 import java.util.HashSet;
 import java.util.Set;
 
+import mosquito.g0.AStar;
+import mosquito.g0.Path;
+
 public class MoveableLight extends Light {
+	
+	public Path shortestPath;
+	
 	public enum Corner {
 		NW, NE, SE, SW
 	}

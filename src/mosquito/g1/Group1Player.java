@@ -116,7 +116,6 @@ public class Group1Player extends mosquito.sim.Player {
 	        lights.add(l1);
 	        lights.add(l2);
 	    }
-	    
 	    boolean flag = false;
 	    for(int i = 0; i < board.length; i++) {
 	        for(int j = 0; j < board[0].length; j++) {
