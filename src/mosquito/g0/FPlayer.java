@@ -94,45 +94,34 @@ public class FPlayer extends mosquito.sim.Player {
 		
 		// initializing AStar
 		FHeuristic fh = new FHeuristic();
-		AreaMap cleanMap = new AreaMap(100,100);
 		
-	    for(int i = 0; i < board.length; i++) {
-	        for(int j = 0; j < board[0].length; j++) {
-	            for(Line2D wall: walls) {
-	                if(wall.ptSegDist(i, j) < 2.0) {
-	                	cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
-	                }
-	            }
-	        }
-	    }
-	    
 		lights = new HashSet<Light>();
+		lastLight = new Point2D.Double(10, 10);
 		mlights = new HashSet<MoveableLight>();
-		// lights.add(new MoveableLight(49,50,true));
-		for(int i = 0; i<numLights; i++)
+		for(int a = 0; a<numLights; a++)
 		{
-			AreaMap dirtyMap = cleanMap;
-			astar = new AStar(dirtyMap, fh);
+			AreaMap cleanMap = new AreaMap(100,100);
+		    for(int i = 0; i < board.length; i++) {
+		        for(int j = 0; j < board[0].length; j++) {
+		            for(Line2D wall: walls) {
+		                if(wall.ptSegDist(i, j) < 2.0) {
+		                	cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
+		                }
+		            }
+		        }
+		    }
+			astar = new AStar(cleanMap, fh);
 			
-			lastLight = new Point2D.Double(10, 10);
-			
-			/*
-			 * The arguments to the Light constructor are: 
-			 * - X coordinate
-			 * - Y coordinate
-			 * - whether or not the light is on
-			 */
-			
-			MoveableLight l = new MoveableLight(lastLight.getX()+i*10,lastLight.getY(), true);
+			MoveableLight l = new MoveableLight(lastLight.getX()+a*10, lastLight.getY(), true);
 
-			l.turnOff();
+//			l.turnOff();
 			lights.add(l);
 			
-			log.error("current iteration is " + i);
+			log.error("current iteration is " + a);
 			
-			astar.calcShortestPath((int) l.getX(), (int) l.getY(), 50, 50);
+			astar.calcShortestPath((int)l.getX(), (int) l.getY(), 50, 50);
 			
-			log.error("current iteration is " + i + " and we are done with calculating aStar");
+			log.error("current iteration is " + a + " and we are done with calculating aStar");
 			
 			l.shortestPath = astar.shortestPath;
 			mlights.add(l);

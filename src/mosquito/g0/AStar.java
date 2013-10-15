@@ -36,6 +36,7 @@ public class AStar {
 		
 		//mark start and goal node
 		map.setStartLocation(startX, startY);
+		log.error("Start location is" + map.getStartLocationX());
 		map.setGoalLocation(goalX, goalY);
 		
 		//Check if the goal node is blocked (if it is, it is impossible to find a path there)
@@ -50,7 +51,6 @@ public class AStar {
 		
 		//while we haven't reached the goal yet
 		while(openList.size() != 0) {
-			log.error("stuck forever");
 			if (openList.size()%100 == 0) {
 //				log.addToLog("\topenList.size() = "+openList.size());
 			}
