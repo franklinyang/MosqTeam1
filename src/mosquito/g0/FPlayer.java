@@ -114,7 +114,7 @@ public class FPlayer extends mosquito.sim.Player {
 			
 			MoveableLight l = new MoveableLight(lastLight.getX()+a*10, lastLight.getY(), true);
 
-//			l.turnOff();
+			l.turnOff();
 			lights.add(l);
 			
 			log.error("current iteration is " + a);
