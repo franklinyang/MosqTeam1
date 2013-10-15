@@ -103,7 +103,7 @@ public class TestPlayer extends mosquito.sim.Player {
 			// a move is not allowed if it would go beyond the world boundaries
 			// you can get the light's position with getX() and getY()
 			Line2D line = new Line2D.Double(50,50,100,0);
-			ml.moveDiag(line, Corner.NE);
+			ml.moveDiag(line, true);
 			//ml.goTo(100, 100);
 			// randomly turn the light off or on
 			// you don't have to call these each time, of course: a light that's on stays on

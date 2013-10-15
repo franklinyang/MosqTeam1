@@ -12,8 +12,10 @@ import java.util.Stack;
 import mosquito.sim.Collector;
 import mosquito.sim.Light;
 import mosquito.sim.MoveableLight;
+import mosquito.sim.MoveableLight.Corner;
 
 import org.apache.log4j.Logger;
+import org.apache.log4j.Priority;
 
 public class Group1Player extends mosquito.sim.Player {
 
@@ -29,6 +31,10 @@ public class Group1Player extends mosquito.sim.Player {
 	
 	private Set<Light> lights;
 	private Set<Line2D> walls;
+	
+	private HashMap<Light, Boolean> wasMovingUp = new HashMap<Light, Boolean>();
+	private HashMap<Light, Integer> numMovesOffPath = new HashMap<Light, Integer>();
+	private HashMap<Light, Line2D> lastObstacleEncountered = new HashMap<Light, Line2D>();
 	
 	private HashMap<Light, Boolean> movementMap = new HashMap<Light, Boolean>();
 	private HashMap<Integer, Integer> numLightsToSpacingMap = new HashMap<Integer, Integer>();
@@ -70,7 +76,6 @@ public class Group1Player extends mosquito.sim.Player {
 		numLightsToMaxRoundsMap.put(5, 150);
 		numLightsToMaxRoundsMap.put(4, 150);
         numLightsToMaxRoundsMap.put(3, 160);
-		
 		ArrayList<Line2D> lines = new ArrayList<Line2D>();
 		Line2D line = new Line2D.Double(30, 30, 80, 80);
 		lines.add(line);
@@ -85,16 +90,16 @@ public class Group1Player extends mosquito.sim.Player {
 	 * number of mosquitoes at coordinate (x, y)
 	 */
 	public Set<Light> getLights(int[][] board) {
-		// Initially place the lights randomly, and put the collector next to the last light
 	    if(numLights > 2) {
-    	    int x = 18; 
-    	    int y = 18;
+    	    int x = 0; 
+    	    int y = numLightsToSpacingMap.get(numLights);
     		lights = new HashSet<Light>();
     		for(int i = 0; i < numLights; i++) {
     		    lastLight = new Point2D.Double(x, y);
-    		    x += numLightsToSpacingMap.get(numLights);
     		    y += numLightsToSpacingMap.get(numLights);
     		    MoveableLight l = new MoveableLight(lastLight.getX(), lastLight.getY(), true);
+    		    wasMovingUp.put(l, false);
+    		    numMovesOffPath.put(l, 0);
     		    lights.add(l);
     		    movementMap.put(l, false);
     		}
@@ -111,6 +116,21 @@ public class Group1Player extends mosquito.sim.Player {
 	        lights.add(l1);
 	        lights.add(l2);
 	    }
+	    
+	    boolean flag = false;
+	    for(int i = 0; i < board.length; i++) {
+	        for(int j = 0; j < board[0].length; j++) {
+	            flag = false;
+	            for(Line2D wall: walls) {
+	                if(wall.ptSegDist(i, j) < 2.0) {
+	                    flag = true;
+	                }
+	            }
+	            if(!flag) {
+	                //Add to the graph
+	            }
+	        }
+	    }
 		return lights;
 	}
 	
@@ -125,96 +145,126 @@ public class Group1Player extends mosquito.sim.Player {
 		
 	    numRounds++;
 	    
-	    if(numLights > 2) {
-    	    if(numRounds < numLightsToMaxRoundsMap.get(numLights)) {
+	    if(numLights > 1) {
+    	    if(numRounds < 300) {
         		for (Light l : lights) {
-        			MoveableLight ml = (MoveableLight)l;
-        			if(ml.getX() < 10 || !movementMap.get(ml)) {
-        			    ml.moveRight();
-        			    movementMap.put(ml, false);
+        			MoveableLight ml = (MoveableLight) l;
+        			boolean hasHitWall = false;
+        			for(Line2D obstacle: walls) {
+        			    Line2D tempLine = new Line2D.Double(ml.getX(), ml.getY(), ml.getX()+8, ml.getY());
+        			    if(obstacle.intersectsLine(tempLine)) {
+        			        ml.moveDiag(obstacle, true);
+        			        hasHitWall = true;
+        			        wasMovingUp.put(ml, true);
+        			        lastObstacleEncountered.put(ml, obstacle);
+        			        break;
+        			    }
         			}
-        			if(board[0].length - ml.getX() < 10 || movementMap.get(ml)) {
-        			    ml.moveLeft();
-        			    movementMap.put(ml, true);
+        			if(!wasMovingUp.get(ml)) {
+        			    numMovesOffPath.put(ml, 0);
+                        ml.moveRight();
         			}
+        			else if(!hasHitWall) {
+        			    if(numMovesOffPath.get(ml) < 10) {
+            			    int numMoves = numMovesOffPath.get(ml);
+                            numMoves++;
+                            numMovesOffPath.put(ml, numMoves);
+                            Line2D obstacle = lastObstacleEncountered.get(ml);
+                            ml.moveDiag(obstacle, true);
+                            wasMovingUp.put(ml, true);
+        			    }
+        			    else {
+        			        numMovesOffPath.put(ml, 0);
+        			        wasMovingUp.put(ml, false);
+        			        ml.moveRight();
+        			    }
+        			}
+//        			if(ml.getX() < 10 || !movementMap.get(ml)) {
+//        			    ml.moveRight();
+//        			    movementMap.put(ml, false);
+//        			}
+//        			if(board[0].length - ml.getX() < 10 || movementMap.get(ml)) {
+//        			    ml.moveLeft();
+//        			    movementMap.put(ml, true);
+//        			}
         		}
     	    }
-    	    else {
-    	        for(Light l: lights) {
-    	            MoveableLight ml = (MoveableLight) l;
-    	            if(ml.getY() < 50 && ml.getX() > 40 && ml.getX() < 60) {
-    	                ml.moveDown();
-    	            }
-    	            else if(ml.getY() > 50 && ml.getX() > 40 && ml.getX() < 60) {
-    	                ml.moveUp();
-    	            }
-    	            else if(ml.getY() == 50) {
-    	                if(ml.getX() == 50) {
-    	                    continue;
-    	                }
-    	                else if(ml.getX() > 40 && ml.getX() < 50) {
-    	                    ml.moveRight();
-    	                }
-    	                else if(ml.getX() > 50 && ml.getX() < 60) {
-    	                    ml.moveLeft();
-    	                }
-    	            }
-    	            else {
-    	                if(ml.getX() > 50) {
-    	                    ml.moveLeft();
-    	                }
-    	                else {
-    	                    ml.moveRight();
-    	                }
-    	            }
-    	        }
-    	    }
+//    	    else {
+//    	        for(Light l: lights) {
+//    	            MoveableLight ml = (MoveableLight) l;
+//    	            if(ml.getY() < 50 && ml.getX() > 40 && ml.getX() < 60) {
+//    	                ml.moveDown();
+//    	            }
+//    	            else if(ml.getY() > 50 && ml.getX() > 40 && ml.getX() < 60) {
+//    	                ml.moveUp();
+//    	            }
+//    	            else if(ml.getY() == 50) {
+//    	                if(ml.getX() == 50) {
+//    	                    continue;
+//    	                }
+//    	                else if(ml.getX() > 40 && ml.getX() < 50) {
+//    	                    ml.moveRight();
+//    	                }
+//    	                else if(ml.getX() > 50 && ml.getX() < 60) {
+//    	                    ml.moveLeft();
+//    	                }
+//    	            }
+//    	            else {
+//    	                if(ml.getX() > 50) {
+//    	                    ml.moveLeft();
+//    	                }
+//    	                else {
+//    	                    ml.moveRight();
+//    	                }
+//    	            }
+//    	        }
+//    	    }
 	    }
-	    else {
-	        if(numRounds < 250) {
-    	        twoLightsHelperL1(numRounds, board);
-    	        twoLightsHelperL2(numRounds, board);
-	        }
-	        else {
-    	        if(l1.getX() == 50 && l1.getY() < 50) {
-    	            l1.moveDown();
-    	        }
-    	        else if(l1.getX() == 50 && l1.getY() > 50) {
-    	            l1.moveUp();
-    	        }
-    	        else if(l1.getY() == 50 && l1.getX() < 50) {
-    	            l1.moveRight();
-    	        }
-    	        else if(l1.getY() == 50 && l1.getX() > 50) {
-    	            l1.moveLeft();
-    	        }
-    	        else if(l1.getX() == 50 && l1.getY() == 50) {
-    	            
-    	        }
-    	        else {
-    	            twoLightsHelperL1(numRounds, board);
-    	        }
-    	        
-    	        if(l2.getX() == 50 && l2.getY() < 50) {
-                    l2.moveDown();
-                }
-                else if(l2.getX() == 50 && l2.getY() > 50) {
-                    l2.moveUp();
-                }
-                else if(l2.getY() == 50 && l2.getX() < 50) {
-                    l2.moveRight();
-                }
-                else if(l2.getY() == 50 && l2.getX() > 50) {
-                    l2.moveLeft();
-                }
-                else if(l2.getX() == 50 && l2.getY() == 50) {
-                    
-                }
-                else {
-                    twoLightsHelperL2(numRounds, board);
-                }
-	        }
-	    }
+//	    else {
+//	        if(numRounds < 250) {
+//    	        twoLightsHelperL1(numRounds, board);
+//    	        twoLightsHelperL2(numRounds, board);
+//	        }
+//	        else {
+//    	        if(l1.getX() == 50 && l1.getY() < 50) {
+//    	            l1.moveDown();
+//    	        }
+//    	        else if(l1.getX() == 50 && l1.getY() > 50) {
+//    	            l1.moveUp();
+//    	        }
+//    	        else if(l1.getY() == 50 && l1.getX() < 50) {
+//    	            l1.moveRight();
+//    	        }
+//    	        else if(l1.getY() == 50 && l1.getX() > 50) {
+//    	            l1.moveLeft();
+//    	        }
+//    	        else if(l1.getX() == 50 && l1.getY() == 50) {
+//    	            
+//    	        }
+//    	        else {
+//    	            twoLightsHelperL1(numRounds, board);
+//    	        }
+//    	        
+//    	        if(l2.getX() == 50 && l2.getY() < 50) {
+//                    l2.moveDown();
+//                }
+//                else if(l2.getX() == 50 && l2.getY() > 50) {
+//                    l2.moveUp();
+//                }
+//                else if(l2.getY() == 50 && l2.getX() < 50) {
+//                    l2.moveRight();
+//                }
+//                else if(l2.getY() == 50 && l2.getX() > 50) {
+//                    l2.moveLeft();
+//                }
+//                else if(l2.getX() == 50 && l2.getY() == 50) {
+//                    
+//                }
+//                else {
+//                    twoLightsHelperL2(numRounds, board);
+//                }
+//	        }
+//	    }
 		
 		return lights;
 	}
