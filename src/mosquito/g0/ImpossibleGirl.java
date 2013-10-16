@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
+import java.awt.geom.Line2D.Double;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -81,16 +82,29 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		this.walls = walls;
 		pointLineRelationships = new int[100][100][walls.size()];
 		ArrayList<Line2D> lines = new ArrayList<Line2D>();
-		Line2D line = new Line2D.Double(30, 30, 80, 80);
-		lines.add(line);
 		sectioningAlgorithm();
 		identifySections(pointLineRelationships);
 		for (int i=0; i<numberOfSections; i++) {
 			sections.get(i).midX = (sections.get(i).maxX+sections.get(i).minX) / 2;
 			sections.get(i).midY = (sections.get(i).maxY+sections.get(i).minY) / 2;
+			
+//			int p=10;
+//			Point2D.Double ul = new Point2D.Double(sections.get(p).minX, sections.get(p).minY);
+//			Point2D.Double ur = new Point2D.Double(sections.get(p).maxX, sections.get(p).minY);
+//			Point2D.Double ll = new Point2D.Double(sections.get(p).minX, sections.get(p).maxY);
+//			Point2D.Double lr = new Point2D.Double(sections.get(p).maxX, sections.get(p).maxY);
+//			Line2D l = new Line2D.Double(ul, ll);
+//			Line2D r = new Line2D.Double(ur, lr);
+//			Line2D u = new Line2D.Double(ur, ul);
+//			Line2D d = new Line2D.Double(ll, lr);
+//			lines.add(l);
+//			lines.add(r);
+//			lines.add(u);
+//			lines.add(d);
 //			System.err.println("Section " + i + " midpoint: (" + sections.get(i).midX +
 //				" , " + sections.get(i).midY + ")");
 		}
+		
 		return lines;
 	}
 
@@ -129,8 +143,6 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 				midX = sections.get(a).midX;
 				midY = sections.get(a).midY;
 			}
-			
-			
 			
 			MoveableLight l = new MoveableLight(midX, midY, true);
 
@@ -224,10 +236,14 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		        hasComboBeenSeen = true;
 		        sections.get(i).xPoints.add(x);
 		        sections.get(i).yPoints.add(y);
-		        if (x > sections.get(numberOfSections-1).maxX) sections.get(i).maxX = x;
-		        else if (x < sections.get(numberOfSections-1).minX) sections.get(i).minX = x;
-		        if (y > sections.get(numberOfSections-1).maxY) sections.get(i).maxY = y;
-		        else if (y < sections.get(numberOfSections-1).minY) sections.get(i).minY = y;
+		        if (x > sections.get(i).maxX)
+		        	sections.get(i).maxX = x;
+		        else if (x < sections.get(i).minX)
+		        	sections.get(i).minX = x;
+		        if (y > sections.get(i).maxY)
+		        	sections.get(i).maxY = y;
+		        else if (y < sections.get(i).minY)
+		        	sections.get(i).minY = y;
 		        break;
 		      } 
 		    } 

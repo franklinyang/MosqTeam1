@@ -24,10 +24,10 @@ public class SectioningPlayer extends mosquito.sim.Player {
 		  int[] boolCombo;
 		  ArrayList<Integer> xPoints;
 		  ArrayList<Integer> yPoints;
-		  int maxX;
-		  int minX;
-		  int maxY;
-		  int minY;
+		  int maxX = 0;
+		  int minX = 100;
+		  int maxY = 0;
+		  int minY = 100;
 		  public Section() {
 			  boolCombo = new int[walls.size()];
 			  xPoints = new ArrayList<Integer>();
