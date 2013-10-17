@@ -41,7 +41,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		  }
 		  //boolean through; //describes if there are multiple entrances into the section;
 		  void printDetails() {
-			  log.debug("boolCombo: " + Arrays.toString(boolCombo));
+//			  log.debug("boolCombo: " + Arrays.toString(boolCombo));
 			  //  log.trace("Area: " + this.area + ", endpoints: " + Arrays.toString(this.endpoints) + ", through? " + through);
 		  }
 		  
@@ -116,8 +116,8 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 			lines.add(c1);
 			lines.add(c2);
 			
-			System.err.println("Section " + i + " midpoint: (" + sections.get(i).midX +
-				" , " + sections.get(i).midY + ")");
+//			System.err.println("Section " + i + " midpoint: (" + sections.get(i).midX +
+//				" , " + sections.get(i).midY + ")");
 		}
 		
 		return lines;
@@ -228,29 +228,29 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 				ml.indexOfPath++;
 				if(ml.indexOfPath >= ml.shortestPath.size())
 					continue;
-				System.err.println(ml.indexOfPath + " compared to " + ml.shortestPath.size());
+//				System.err.println(ml.indexOfPath + " compared to " + ml.shortestPath.size());
 				ml.currPath = ml.shortestPath.get(ml.indexOfPath);
 				continue;
 			}
 			// check to see if we're done moving
-			System.err.println("ml.move is "+ml.move);
-			System.err.println("CurrPath.getLength() is "+currPath.getLength());
+//			System.err.println("ml.move is "+ml.move);
+//			System.err.println("CurrPath.getLength() is "+currPath.getLength());
 			if (ml.move >= currPath.getLength()) {
-				System.err.println("Hitting a null pointer?");
+//				System.err.println("Hitting a null pointer?");
 				// check to see if we're done with all paths to waypoints
 				ml.indexOfPath++;
 				if (ml.indexOfPath >= (ml.shortestPath.size())) {
-					System.err.println("Continued ml.indexOfPath >= ml.shortestPath.size()");
+//					System.err.println("Continued ml.indexOfPath >= ml.shortestPath.size()");
 					continue;
 				}
 				
 				ml.currPath = ml.shortestPath.get(ml.indexOfPath);
 				ml.move = 0;
-				System.err.println("Continued ml.move >= currPath.getLength()");
+//				System.err.println("Continued ml.move >= currPath.getLength()");
 				continue;
 			}
 			
-			log.error("("+ml.getX()+","+ml.getY()+") --> "+"("+currPath.getX(ml.move)+","+currPath.getY(ml.move)+")");
+//			log.error("("+ml.getX()+","+ml.getY()+") --> "+"("+currPath.getX(ml.move)+","+currPath.getY(ml.move)+")");
 			ml.moveTo(currPath.getX(ml.move), currPath.getY(ml.move));
 			ml.move++;
 		}
