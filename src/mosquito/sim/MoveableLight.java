@@ -10,6 +10,12 @@ import mosquito.g0.Path;
 public class MoveableLight extends Light {
 	
 	public Path shortestPath;
+	public double currDestinationX;
+	public double currDestinationY;
+	
+	public int numTurnsAtCorner = 0;
+	public boolean hasStoppedAtCorner = false;
+	public int numMovesSinceStopped = 0;
 	
 	public enum Corner {
 		NW, NE, SE, SW
@@ -46,7 +52,7 @@ public class MoveableLight extends Light {
 	public boolean moveUp() {
 		if (this.y > 0) {
 			if (isLegalMove(this.x, this.y-1)) {
-				this.y = this.y - 0.99;
+				this.y = this.y - 1;
 				return true;
 			}
 			else return false;
@@ -57,7 +63,7 @@ public class MoveableLight extends Light {
 	public boolean moveDown() {
 		if (this.y < 100) {
 			if (isLegalMove(this.x, this.y+1)) {
-				this.y = this.y + 0.99;
+				this.y = this.y + 1;
 				return true;
 			}
 			else return false;
@@ -68,7 +74,7 @@ public class MoveableLight extends Light {
 	public boolean moveLeft() {
 		if (this.x > 0) {
 			if (isLegalMove(this.x-1, this.y)) {
-				this.x = this.x - 0.99;
+				this.x = this.x - 1;
 				return true;
 			}
 			else return false;
@@ -79,7 +85,7 @@ public class MoveableLight extends Light {
 	public boolean moveRight() {
 		if (this.x < 100) {
 			if (isLegalMove(this.x+1, this.y)) {
-				this.x = this.x + 0.99;
+				this.x = this.x + 1;
 				return true;
 			}
 			else return false;
