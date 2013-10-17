@@ -381,8 +381,13 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 					//build an adjacency matrix with the distance between each midpoint
 					astar.calcShortestPath(sections.get(i).midX, sections.get(i).midY, sections.get(j).midX, sections.get(j).midY);
 					//log.error("line 311.  iX: " + sections.get(i).midX + " iY: " + sections.get(j).midY);
-					midpointGraph.addEdge(i,j,astar.shortestPath.getLength());
-					midpointGraph.setLabel(i, ("v" + j));
+					if (astar.shortestPath == null) {
+						//TODO: This is hacky
+						midpointGraph.addEdge(i,  j, 500);
+					} else {
+						midpointGraph.addEdge(i,j,astar.shortestPath.getLength());
+						midpointGraph.setLabel(i, ("v" + j));
+					}
 				}
 			} 
 		}

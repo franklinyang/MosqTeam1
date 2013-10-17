@@ -43,6 +43,7 @@ public class AStar {
 		
 		//Check if the goal node is blocked (if it is, it is impossible to find a path there)
 		if (map.getNode(goalX, goalY).isObstacle) {
+			log.error("This is our problem, line 46");
 			return null;
 		}
 		map.getStartNode().setDistanceFromStart(0);
