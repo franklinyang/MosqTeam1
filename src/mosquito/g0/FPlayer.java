@@ -123,7 +123,7 @@ public class FPlayer extends mosquito.sim.Player {
 			
 			log.error("current iteration is " + a + " and we are done with calculating aStar");
 			
-			l.shortestPath = astar.shortestPath;
+			l.shortestPath.add(astar.shortestPath);
 			mlights.add(l);
 		}
 	    
@@ -145,7 +145,7 @@ public class FPlayer extends mosquito.sim.Player {
 		for (MoveableLight ml : mlights) {
 //			MoveableLight ml = (MoveableLight)l;
 //			currAStar = ml.astar;
-			Path shortest = ml.shortestPath;
+			Path shortest = ml.shortestPath.get(0);
 			if (move >= shortest.getLength())
 				continue;
 				

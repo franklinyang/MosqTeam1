@@ -70,7 +70,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 	private Set<Light> lights;
 	private Set<Line2D> walls;
 	
-	private Set<MoveableLight> mlights;
+	private ArrayList<MoveableLight> mlights;
 	private AreaMap map;
 	private AStar astar;
 	private int move;
@@ -107,7 +107,6 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 			Line2D c1 = new Line2D.Double(ul, lr);
 			Line2D c2 = new Line2D.Double(ll, ur);
 			
-			
 			lines.add(c1);
 			lines.add(c2);
 			
@@ -131,43 +130,70 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		FHeuristic fh = new FHeuristic();
 		
 		lights = new HashSet<Light>();
-		lastLight = new Point2D.Double(10, 10);
-		mlights = new HashSet<MoveableLight>();
-		for(int a = 0; a<numLights; a++)
-		{
-			AreaMap cleanMap = new AreaMap(100,100);
-		    for(int i = 0; i < board.length; i++) {
-		        for(int j = 0; j < board[0].length; j++) {
-		            for(Line2D wall: walls) {
-		                if(wall.ptSegDist(i, j) < 2.0) {
-		                	cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
-		                }
+		mlights = new ArrayList<MoveableLight>();
+		
+		// initially position each of the nights
+		for (int i = 0; i < numLights; i++) {
+			MoveableLight l = new MoveableLight(sections.get(i).midX, sections.get(i).midY, true);
+			mlights.add(l);
+			lights.add(l);
+		}
+		
+		for(int i = 0; i < sections.size(); i++) {
+			sections.get(i).setMidpoints();
+		}
+		
+		// add a list of waypoints to each light
+		int index;
+		Point2D waypoint;
+		AreaMap correctMap = generateAreaMap(board, walls);
+		for(int i = 0; i < sections.size(); i++) {
+			index = i % numLights;
+			waypoint = new Point2D.Double(sections.get(i).midX, sections.get(i).midY);
+			if (!correctMap.getNodes().get(sections.get(i).midX).get(sections.get(i).midY).isObstacle)
+				mlights.get(index).waypoints.add(waypoint);
+		}
+		
+		// for each light, make the last light the collector
+		for (int i = 0; i < numLights; i++) {
+			//assume that collector is at 50,50
+			mlights.get(i).waypoints.add(new Point2D.Double(50,50));
+		}
+		
+		int len;
+		Point2D currPoint;
+		Point2D nextPoint;
+		// generate paths between waypoints
+		for (MoveableLight currLight : mlights) {
+			len = currLight.waypoints.size();
+			// set all paths in moving light
+			for (int j = 0; j < len-1; j++) {
+				currPoint = currLight.waypoints.get(j);
+				nextPoint = currLight.waypoints.get(j+1);
+				AreaMap cleanMap = generateAreaMap(board, walls);
+				astar = new AStar(cleanMap, fh);
+				astar.calcShortestPath((int)currPoint.getX(), (int)currPoint.getY(), (int)nextPoint.getX(), (int)nextPoint.getY());
+				currLight.shortestPath.add(astar.shortestPath);
+			}
+			// initialize paths to first path
+			currLight.currPath = currLight.shortestPath.get(0);
+		}
+		
+		return lights;
+	}
+	
+	public AreaMap generateAreaMap(int[][] board, Set<Line2D> walls) {
+		AreaMap cleanMap = new AreaMap(100,100);
+		for(int i = 0; i < board.length; i++) {
+		    for(int j = 0; j < board[0].length; j++) {
+		        for(Line2D wall: walls) {
+		            if(wall.ptSegDist(i, j) < 2.0) {
+		            	cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
 		            }
 		        }
 		    }
-			astar = new AStar(cleanMap, fh);
-			
-			int midX = 10;
-			int midY = 10;
-			if (a < sections.size()) {
-				midX = sections.get(a).midX;
-				midY = sections.get(a).midY;
-			}
-			
-			MoveableLight l = new MoveableLight(midX, midY, true);
-
-			l.turnOff();
-			lights.add(l);
-			
-			astar.calcShortestPath(midX, midY, 50, 50);
-			
-			log.error("Currently the midX and midY are : " + midX + ", " + midY);
-			
-			l.shortestPath = astar.shortestPath;
-			mlights.add(l);
 		}
-	    
-	    return lights;
+		return cleanMap;
 	}
 	
 	/*
@@ -178,19 +204,37 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 	 * number of mosquitoes at coordinate (x, y)
 	 */
 	public Set<Light> updateLights(int[][] board) {
-//		AStar currAStar;
 		
 		for (MoveableLight ml : mlights) {
-//			MoveableLight ml = (MoveableLight)l;
-//			currAStar = ml.astar;
-			Path shortest = ml.shortestPath;
-			if (move >= shortest.getLength())
+			Path currPath = ml.currPath; // get the current path we're working through
+			if (currPath == null) {
+				ml.move = 0;
+				ml.currPath = ml.shortestPath.get(ml.indexOfPath+1);
 				continue;
+			}
+			// check to see if we're done moving
+			System.err.println("ml.move is "+ml.move);
+			System.err.println("CurrPath.getLength() is "+currPath.getLength());
+			if (ml.move >= currPath.getLength()) {
+				System.err.println("Hitting a null pointer?");
+				// check to see if we're done with all paths to waypoints
+				ml.indexOfPath++;
+				if (ml.indexOfPath >= (ml.shortestPath.size())) {
+					System.err.println("Continued ml.indexOfPath >= ml.shortestPath.size()");
+					continue;
+				}
 				
-			ml.moveTo(shortest.getX(move), shortest.getY(move));
+				ml.currPath = ml.shortestPath.get(ml.indexOfPath);
+				ml.move = 0;
+				System.err.println("Continued ml.move >= currPath.getLength()");
+				continue;
+			}
 			
+			log.error("("+ml.getX()+","+ml.getY()+") --> "+"("+currPath.getX(ml.move)+","+currPath.getY(ml.move)+")");
+			ml.moveTo(currPath.getX(ml.move), currPath.getY(ml.move));
+			ml.move++;
 		}
-		this.move++;
+		
 		return lights;
 	}
 

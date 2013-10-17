@@ -1,6 +1,8 @@
 package mosquito.sim;
 
 import java.awt.geom.Line2D;
+import java.awt.geom.Point2D;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -9,7 +11,12 @@ import mosquito.g0.Path;
 
 public class MoveableLight extends Light {
 	
-	public Path shortestPath;
+	public ArrayList<Path> shortestPath;
+	public ArrayList<Point2D> waypoints;
+	public int move = 0;
+	public int indexOfPath = 0;
+	// how will this handle the case where we have fewer lights than sections?
+	public Path currPath;
 	
 	public enum Corner {
 		NW, NE, SE, SW
@@ -22,6 +29,8 @@ public class MoveableLight extends Light {
 	public MoveableLight(double x, double y, boolean on) {
 		super(x, y, 0, 0, 0);
 		isLightOn = on;
+		waypoints = new ArrayList<Point2D>();
+		shortestPath = new ArrayList<Path>();
 	}
 	
 	private boolean isLightOn = true;
@@ -46,7 +55,7 @@ public class MoveableLight extends Light {
 	public boolean moveUp() {
 		if (this.y > 0) {
 			if (isLegalMove(this.x, this.y-1)) {
-				this.y = this.y - 0.99;
+				this.y = this.y - 1;
 				return true;
 			}
 			else return false;
@@ -57,7 +66,7 @@ public class MoveableLight extends Light {
 	public boolean moveDown() {
 		if (this.y < 100) {
 			if (isLegalMove(this.x, this.y+1)) {
-				this.y = this.y + 0.99;
+				this.y = this.y + 1;
 				return true;
 			}
 			else return false;
@@ -68,7 +77,7 @@ public class MoveableLight extends Light {
 	public boolean moveLeft() {
 		if (this.x > 0) {
 			if (isLegalMove(this.x-1, this.y)) {
-				this.x = this.x - 0.99;
+				this.x = this.x - 1;
 				return true;
 			}
 			else return false;
@@ -79,7 +88,7 @@ public class MoveableLight extends Light {
 	public boolean moveRight() {
 		if (this.x < 100) {
 			if (isLegalMove(this.x+1, this.y)) {
-				this.x = this.x + 0.99;
+				this.x = this.x + 1;
 				return true;
 			}
 			else return false;
