@@ -153,13 +153,13 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		int index;
 		Point2D waypoint;
 		AreaMap correctMap = generateAreaMap(board, walls);
-		for(int i = 0; i < sections.size(); i++) {
+		for(int i = 0; i < numberOfSections; i++) {
 			index = i % numLights;
-			waypoint = new Point2D.Double(sections.get(i).midX, sections.get(i).midY);
-			if (!correctMap.getNodes().get(sections.get(i).midX).get(sections.get(i).midY).isObstacle) {
+			waypoint = new Point2D.Double(sections.get(orderedSections[i]).midX, sections.get(orderedSections[i]).midY);
+			if (!correctMap.getNodes().get(sections.get(orderedSections[i]).midX).get(sections.get(orderedSections[i]).midY).isObstacle) {
 				mlights.get(index).waypoints.add(waypoint);
-				this.collectorX = sections.get(i).midX;
-				this.collectorY = sections.get(i).midY;
+				this.collectorX = sections.get(orderedSections[i]).midX;
+				this.collectorY = sections.get(orderedSections[i]).midY;
 			}
 		}
 		
