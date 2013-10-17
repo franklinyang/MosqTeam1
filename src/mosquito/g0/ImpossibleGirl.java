@@ -344,8 +344,6 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		
 		// initializing AStar
 		FHeuristic fh = new FHeuristic();
-		lastLight = new Point2D.Double(10, 10);
-		mlights = new ArrayList<MoveableLight>();
 		AreaMap cleanMap = new AreaMap(100,100);
 	    for(int i = 0; i < board.length; i++) {
 	        for(int j = 0; j < board[0].length; j++) {
