@@ -220,9 +220,9 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 	public int comparePointToLine(int x, int y, Line2D line) {
 		boolean lineIsVertical = (line.getX1() == line.getX2());
 		
-	  if (lineIsVertical) {
-	    //for vertical lines, assume that points to the left are lesser and points to the right are greater
-			if (y < line.getY1()) return 0;
+		  if (lineIsVertical) {
+		    //for vertical lines, assume that points to the left are lesser and points to the right are greater
+				if (x < line.getX1()) return 0;
 	    else return 1;
 		} else {
 	    //find the slope and intercept of the line given
