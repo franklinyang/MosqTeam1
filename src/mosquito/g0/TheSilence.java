@@ -8,7 +8,10 @@ import java.awt.geom.Line2D.Double;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
@@ -17,8 +20,6 @@ import org.apache.log4j.Logger;
 import mosquito.sim.Collector;
 import mosquito.sim.Light;
 import mosquito.sim.MoveableLight;
-
-
 
 public class TheSilence extends mosquito.sim.Player {
 	class Section {
@@ -375,5 +376,35 @@ public class TheSilence extends mosquito.sim.Player {
 		}
 		orderedSections = Prims.prim(midpointGraph, 0);
 	}
+	
+	public List<Point2D.Double> getMosquitoLocationsByDistance(int[][] board) {
+        List<Point2D.Double> result = new ArrayList<Point2D.Double>();
+        for(int i = 0; i < 100; i++) {
+            for(int j = 0; j < 100; j++) {
+                if(i < 95 && (j < 48 || j > 52)) {
+                    if(board[i][j] != 0) {
+                        result.add(new Point2D.Double(i, j));
+                    }
+                }
+            }
+        }
+        Collections.sort(result, new Comparator<Point2D.Double>() {
+            @Override
+            public int compare(Point2D.Double o1, Point2D.Double o2) {
+                Point2D.Double origin = new Point2D.Double(97, 50);
+                double o1Distance = origin.distance(o1);
+                double o2Distance = origin.distance(o2);
+                if(o1Distance > o2Distance) {
+                    return 1;
+                }
+                else if(o2Distance > o1Distance) {
+                    return -1;
+                }
+                return 0;
+            }
+        });
+        
+        return result;
+    }
 }
 

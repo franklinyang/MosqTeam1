@@ -149,6 +149,13 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 			sections.get(i).setMidpoints();
 		}
 		
+
+		findOptimalRoute(board);
+	    
+	    for (int i=0; i<numberOfSections; i++) {
+	    	log.error("The " + i + "th point to visit is: " + orderedSections[i]);
+	    }
+	    
 		// add a list of waypoints to each light
 		int index;
 		Point2D waypoint;
@@ -187,12 +194,6 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 			// initialize paths to first path
 			currLight.currPath = currLight.shortestPath.get(0);
 		}
-
-		findOptimalRoute(board);
-	    
-	    for (int i=0; i<numberOfSections; i++) {
-	    	log.error("The " + i + "th point to visit is: " + orderedSections[i]);
-	    }
 	    
 		return lights;
 	}
