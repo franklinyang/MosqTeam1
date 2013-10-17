@@ -17,6 +17,12 @@ public class MoveableLight extends Light {
 	public int indexOfPath = 0;
 	// how will this handle the case where we have fewer lights than sections?
 	public Path currPath;
+	public double currDestinationX;
+	public double currDestinationY;
+	
+	public int numTurnsAtCorner = 0;
+	public boolean hasStoppedAtCorner = false;
+	public int numMovesSinceStopped = 0;
 	
 	public enum Corner {
 		NW, NE, SE, SW

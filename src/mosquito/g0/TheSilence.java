@@ -20,7 +20,7 @@ import mosquito.sim.MoveableLight;
 
 
 
-public class ImpossibleGirl extends mosquito.sim.Player {
+public class TheSilence extends mosquito.sim.Player {
 	class Section {
 		  int[] boolCombo;
 		  ArrayList<Integer> xPoints;
