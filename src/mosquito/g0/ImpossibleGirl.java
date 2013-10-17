@@ -44,6 +44,18 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 			  log.debug("boolCombo: " + Arrays.toString(boolCombo));
 			  //  log.trace("Area: " + this.area + ", endpoints: " + Arrays.toString(this.endpoints) + ", through? " + through);
 		  }
+		  
+		  void setMidpoints() {
+			  int sumX = 0;
+			  int sumY = 0;
+			  int len = xPoints.size();
+			  for (int i = 0; i < len; i++) {
+				  sumX += xPoints.get(i);
+				  sumY += yPoints.get(i);
+			  }
+			  this.midX = sumX/len;
+			  this.midY = sumY/len;
+		  }
 	}
 
 	private int numLights;
@@ -85,21 +97,20 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		sectioningAlgorithm();
 		identifySections(pointLineRelationships);
 		for (int i=0; i<numberOfSections; i++) {
-			sections.get(i).midX = (sections.get(i).maxX+sections.get(i).minX) / 2;
-			sections.get(i).midY = (sections.get(i).maxY+sections.get(i).minY) / 2;
 			
-			Point2D.Double ul = new Point2D.Double(sections.get(i).minX, sections.get(i).minY);
-			Point2D.Double ur = new Point2D.Double(sections.get(i).maxX, sections.get(i).minY);
-			Point2D.Double ll = new Point2D.Double(sections.get(i).minX, sections.get(i).maxY);
-			Point2D.Double lr = new Point2D.Double(sections.get(i).maxX, sections.get(i).maxY);
-			Line2D l = new Line2D.Double(ul, ll);
-			Line2D r = new Line2D.Double(ur, lr);
-			Line2D u = new Line2D.Double(ur, ul);
-			Line2D d = new Line2D.Double(ll, lr);
-			lines.add(l);
-			lines.add(r);
-			lines.add(u);
-			lines.add(d);
+			sections.get(i).setMidpoints();
+			Point2D ul = new Point2D.Double(sections.get(i).midX-1, sections.get(i).midY-1);
+			Point2D ll = new Point2D.Double(sections.get(i).midX-1, sections.get(i).midY+1);
+			Point2D ur = new Point2D.Double(sections.get(i).midX+1, sections.get(i).midY-1);
+			Point2D lr = new Point2D.Double(sections.get(i).midX+1, sections.get(i).midY+1);
+			
+			Line2D c1 = new Line2D.Double(ul, lr);
+			Line2D c2 = new Line2D.Double(ll, ur);
+			
+			
+			lines.add(c1);
+			lines.add(c2);
+			
 			System.err.println("Section " + i + " midpoint: (" + sections.get(i).midX +
 				" , " + sections.get(i).midY + ")");
 		}
