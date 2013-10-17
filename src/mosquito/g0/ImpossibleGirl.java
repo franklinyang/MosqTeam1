@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
+import java.awt.geom.Line2D.Double;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,15 +20,20 @@ import mosquito.sim.MoveableLight;
 
 
 
-public class SectioningPlayer extends mosquito.sim.Player {
+public class ImpossibleGirl extends mosquito.sim.Player {
 	class Section {
 		  int[] boolCombo;
 		  ArrayList<Integer> xPoints;
 		  ArrayList<Integer> yPoints;
-		  int maxX = 0;
-		  int minX = 100;
-		  int maxY = 0;
-		  int minY = 100;
+		  int maxX;
+		  int minX;
+		  int maxY;
+		  int minY;
+		  int midX;
+		  int midY;
+		  
+		  boolean visited = false;
+		  
 		  public Section() {
 			  boolCombo = new int[walls.size()];
 			  xPoints = new ArrayList<Integer>();
@@ -37,6 +43,18 @@ public class SectioningPlayer extends mosquito.sim.Player {
 		  void printDetails() {
 			  log.debug("boolCombo: " + Arrays.toString(boolCombo));
 			  //  log.trace("Area: " + this.area + ", endpoints: " + Arrays.toString(this.endpoints) + ", through? " + through);
+		  }
+		  
+		  void setMidpoints() {
+			  int sumX = 0;
+			  int sumY = 0;
+			  int len = xPoints.size();
+			  for (int i = 0; i < len; i++) {
+				  sumX += xPoints.get(i);
+				  sumY += yPoints.get(i);
+			  }
+			  this.midX = sumX/len;
+			  this.midY = sumY/len;
 		  }
 	}
 
@@ -51,6 +69,11 @@ public class SectioningPlayer extends mosquito.sim.Player {
 	
 	private Set<Light> lights;
 	private Set<Line2D> walls;
+	
+	private Set<MoveableLight> mlights;
+	private AreaMap map;
+	private AStar astar;
+	private int move;
 	
 	private int pointLineRelationships[][][];
 	private int numberOfSections;
@@ -71,14 +94,27 @@ public class SectioningPlayer extends mosquito.sim.Player {
 		this.walls = walls;
 		pointLineRelationships = new int[100][100][walls.size()];
 		ArrayList<Line2D> lines = new ArrayList<Line2D>();
-		Line2D line = new Line2D.Double(30, 30, 80, 80);
-		lines.add(line);
 		sectioningAlgorithm();
 		identifySections(pointLineRelationships);
 		for (int i=0; i<numberOfSections; i++) {
-			System.err.println("Section " + i + " midpoint: (" + (sections.get(i).maxX+sections.get(i).minX)/2 +
-				" , " + (sections.get(i).maxY+sections.get(i).minY)/2 + ")");
+			
+			sections.get(i).setMidpoints();
+			Point2D ul = new Point2D.Double(sections.get(i).midX-1, sections.get(i).midY-1);
+			Point2D ll = new Point2D.Double(sections.get(i).midX-1, sections.get(i).midY+1);
+			Point2D ur = new Point2D.Double(sections.get(i).midX+1, sections.get(i).midY-1);
+			Point2D lr = new Point2D.Double(sections.get(i).midX+1, sections.get(i).midY+1);
+			
+			Line2D c1 = new Line2D.Double(ul, lr);
+			Line2D c2 = new Line2D.Double(ll, ur);
+			
+			
+			lines.add(c1);
+			lines.add(c2);
+			
+			System.err.println("Section " + i + " midpoint: (" + sections.get(i).midX +
+				" , " + sections.get(i).midY + ")");
 		}
+		
 		return lines;
 	}
 
@@ -90,28 +126,48 @@ public class SectioningPlayer extends mosquito.sim.Player {
 	 * number of mosquitoes at coordinate (x, y)
 	 */
 	public Set<Light> getLights(int[][] board) {
-		// Initially place the lights randomly, and put the collector next to the last light
 
-		lights = new HashSet<Light>();
-		Random r = new Random();
-		for(int i = 0; i<numLights;i++)
-		{
-			// this player just picks random points for the Light
-			lastLight = new Point2D.Double(r.nextInt(100), r.nextInt(100));
-			
-			/*
-			 * The arguments to the Light constructor are: 
-			 * - X coordinate
-			 * - Y coordinate
-			 * - whether or not the light is on
-			 */
-			MoveableLight l = new MoveableLight(lastLight.getX(),lastLight.getY(), true);
-
-			log.trace("Positioned a light at (" + lastLight.getX() + ", " + lastLight.getY() + ")");
-			lights.add(l);
-		}
+		// initializing AStar
+		FHeuristic fh = new FHeuristic();
 		
-		return lights;
+		lights = new HashSet<Light>();
+		lastLight = new Point2D.Double(10, 10);
+		mlights = new HashSet<MoveableLight>();
+		for(int a = 0; a<numLights; a++)
+		{
+			AreaMap cleanMap = new AreaMap(100,100);
+		    for(int i = 0; i < board.length; i++) {
+		        for(int j = 0; j < board[0].length; j++) {
+		            for(Line2D wall: walls) {
+		                if(wall.ptSegDist(i, j) < 2.0) {
+		                	cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
+		                }
+		            }
+		        }
+		    }
+			astar = new AStar(cleanMap, fh);
+			
+			int midX = 10;
+			int midY = 10;
+			if (a < sections.size()) {
+				midX = sections.get(a).midX;
+				midY = sections.get(a).midY;
+			}
+			
+			MoveableLight l = new MoveableLight(midX, midY, true);
+
+			l.turnOff();
+			lights.add(l);
+			
+			astar.calcShortestPath(midX, midY, 50, 50);
+			
+			log.error("Currently the midX and midY are : " + midX + ", " + midY);
+			
+			l.shortestPath = astar.shortestPath;
+			mlights.add(l);
+		}
+	    
+	    return lights;
 	}
 	
 	/*
@@ -122,34 +178,19 @@ public class SectioningPlayer extends mosquito.sim.Player {
 	 * number of mosquitoes at coordinate (x, y)
 	 */
 	public Set<Light> updateLights(int[][] board) {
-		int counter = 0;
-
-		for (Light l : lights) {
-			MoveableLight ml = (MoveableLight)l;
-
-			// randomly move it in one direction
-			// these methods return true if the move is allowed, false otherwise
-			// a move is not allowed if it would go beyond the world boundaries
-			// you can get the light's position with getX() and getY()
-			switch (counter) {
-			case 0: ml.goTo((sections.get(0).maxX+sections.get(0).minX)/2, (sections.get(0).maxY+sections.get(0).minY)/2);
-				break;
-			case 1: ml.goTo((sections.get(1).maxX+sections.get(1).minX)/2, (sections.get(1).maxY+sections.get(1).minY)/2);
-				break;
-			case 2: ml.goTo((sections.get(2).maxX+sections.get(2).minX)/2, (sections.get(2).maxY+sections.get(2).minY)/2);
-				break;
-			case 3: ml.goTo((sections.get(3).maxX+sections.get(3).minX)/2, (sections.get(3).maxY+sections.get(3).minY)/2);
-				break;
-			case 4: ml.goTo((sections.get(4).maxX+sections.get(4).minX)/2, (sections.get(4).maxY+sections.get(4).minY)/2);
-				break;
-			default: ml.goTo(50, 50);
-			} if (counter < numberOfSections-1) counter++;
-
-			// randomly turn the light off or on
-			// you don't have to call these each time, of course: a light that's on stays on
-			// you can query the state of the light with the isOn() method
-		}
+//		AStar currAStar;
 		
+		for (MoveableLight ml : mlights) {
+//			MoveableLight ml = (MoveableLight)l;
+//			currAStar = ml.astar;
+			Path shortest = ml.shortestPath;
+			if (move >= shortest.getLength())
+				continue;
+				
+			ml.moveTo(shortest.getX(move), shortest.getY(move));
+			
+		}
+		this.move++;
 		return lights;
 	}
 
@@ -160,8 +201,7 @@ public class SectioningPlayer extends mosquito.sim.Player {
 	@Override
 	public Collector getCollector() {
 		// this one just places a collector next to the last light that was added
-		Collector c = new Collector(lastLight.getX()+1,lastLight.getY() +1);
-		System.err.println("Positioned a Collector at (" + (lastLight.getX()+1) + ", " + (lastLight.getY()+1) + ")");
+		Collector c = new Collector(50,50);
 		return c;
 	}
 	
@@ -180,9 +220,9 @@ public class SectioningPlayer extends mosquito.sim.Player {
 	public int comparePointToLine(int x, int y, Line2D line) {
 		boolean lineIsVertical = (line.getX1() == line.getX2());
 		
-	  if (lineIsVertical) {
-	    //for vertical lines, assume that points to the left are lesser and points to the right are greater
-			if (y < line.getY1()) return 0;
+		  if (lineIsVertical) {
+		    //for vertical lines, assume that points to the left are lesser and points to the right are greater
+				if (x < line.getX1()) return 0;
 	    else return 1;
 		} else {
 	    //find the slope and intercept of the line given
@@ -205,10 +245,14 @@ public class SectioningPlayer extends mosquito.sim.Player {
 		        hasComboBeenSeen = true;
 		        sections.get(i).xPoints.add(x);
 		        sections.get(i).yPoints.add(y);
-		        if (x > sections.get(numberOfSections-1).maxX) sections.get(i).maxX = x;
-		        else if (x < sections.get(numberOfSections-1).minX) sections.get(i).minX = x;
-		        if (y > sections.get(numberOfSections-1).maxY) sections.get(i).maxY = y;
-		        else if (y < sections.get(numberOfSections-1).minY) sections.get(i).minY = y;
+		        if (x > sections.get(i).maxX)
+		        	sections.get(i).maxX = x;
+		        else if (x < sections.get(i).minX)
+		        	sections.get(i).minX = x;
+		        if (y > sections.get(i).maxY)
+		        	sections.get(i).maxY = y;
+		        else if (y < sections.get(i).minY)
+		        	sections.get(i).minY = y;
 		        break;
 		      } 
 		    } 

@@ -110,51 +110,50 @@ public class FPlayer extends mosquito.sim.Player {
                             }
                         }
                     }
-                        astar = new AStar(cleanMap, fh);
-                        
-                        MoveableLight l = new MoveableLight(lastLight.getX()+a*10, lastLight.getY(), true);
-
-                        l.turnOff();
-                        lights.add(l);
-                        
-                        log.error("current iteration is " + a);
-                        
-                        astar.calcShortestPath((int)l.getX(), (int) l.getY(), 50, 50);
-                        
-                        log.error("current iteration is " + a + " and we are done with calculating aStar");
-                        
-                        l.shortestPath = astar.shortestPath;
-                        mlights.add(l);
-                }
+                    astar = new AStar(cleanMap, fh);
+                    
+                    MoveableLight l = new MoveableLight(lastLight.getX()+a*10, lastLight.getY(), true);
+                    
+                    l.turnOff();
+                    lights.add(l);
+                    
+                    log.error("current iteration is " + a);
+                    
+                    astar.calcShortestPath((int)l.getX(), (int) l.getY(), 50, 50);
+                    
+                    log.error("current iteration is " + a + " and we are done with calculating aStar");
+                    
+                    l.shortestPath = astar.shortestPath;
+                    mlights.add(l);
+            }
             
             return lights;
         }
-        
-        /*
-         * This is called at the beginning of each step (before the mosquitoes have moved)
-         * If your Set contains additional lights, an error will occur. 
-         * Also, if a light moves more than one space in any direction, an error will occur.
-         * The board tells you where the mosquitoes are: board[x][y] tells you the
-         * number of mosquitoes at coordinate (x, y)
-         */
-        
-        public Set<Light> updateLights(int[][] board) {
-                
-//                AStar currAStar;
-                
-                for (MoveableLight ml : mlights) {
-//                        MoveableLight ml = (MoveableLight)l;
-//                        currAStar = ml.astar;
-                        Path shortest = ml.shortestPath;
-                        if (move >= shortest.getLength())
-                                continue;
-                                
-                        ml.moveTo(shortest.getX(move), shortest.getY(move));
-                        
-                }
-                this.move++;
-                return lights;
-        }
+	/*
+	 * This is called at the beginning of each step (before the mosquitoes have moved)
+	 * If your Set contains additional lights, an error will occur. 
+	 * Also, if a light moves more than one space in any direction, an error will occur.
+	 * The board tells you where the mosquitoes are: board[x][y] tells you the
+	 * number of mosquitoes at coordinate (x, y)
+	 */
+	
+	public Set<Light> updateLights(int[][] board) {
+		
+//		AStar currAStar;
+		
+		for (MoveableLight ml : mlights) {
+//			MoveableLight ml = (MoveableLight)l;
+//			currAStar = ml.astar;
+			Path shortest = ml.shortestPath;
+			if (move >= shortest.getLength())
+				continue;
+				
+			ml.moveTo(shortest.getX(move), shortest.getY(move));
+			
+		}
+		this.move++;
+		return lights;
+	}
 
         /*
          * Currently this is only called once (after getLights), so you cannot
