@@ -292,26 +292,34 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		lights = new HashSet<Light>();
 		lastLight = new Point2D.Double(10, 10);
 		mlights = new HashSet<MoveableLight>();
-		AreaMap cleanMap = new AreaMap(100,100);
-	    for(int i = 0; i < board.length; i++) {
-	        for(int j = 0; j < board[0].length; j++) {
-	            for(Line2D wall: walls) {
-	                if(wall.ptSegDist(i, j) < 2.0) {
-	                	cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
-	                }
-	            }
-	        }
-	    }
-		astar = new AStar(cleanMap, fh);
 		
 		for (int i=0; i<numberOfSections; i++) {
+			AreaMap cleanMap = new AreaMap(100,100);
+		    for(int k = 0; k < board.length; k++) {
+		        for(int l = 0; l < board[0].length; l++) {
+		            for(Line2D wall: walls) {
+		                if(wall.ptSegDist(k, l) < 2.0) {
+		                	cleanMap.getNodes().get(k).get(l).isObstacle = true; // nay on the current node
+		                }
+		            }
+		        }
+		    }
+			astar = new AStar(cleanMap, fh);
 			for (int j=0; j<numberOfSections; j++) {
-				//build an adjacency matrix with the distance between each midpoint
-				astar.calcShortestPath(sections.get(i).midX, sections.get(i).midY, sections.get(j).midX, sections.get(j).midY);
-				//log.error("line 311.  iX: " + sections.get(i).midX + " iY: " + sections.get(j).midY);
-				midpointGraph.addEdge(i,j,astar.shortestPath.getLength());
-				midpointGraph.setLabel(i, ("v" + i));
-			}
+				if (i==j) {
+					midpointGraph.addEdge(i,j,0); 
+					midpointGraph.setLabel(i, ("v" + j));
+				} else if (i>j) {
+					midpointGraph.addEdge(i, j, midpointGraph.getWeight(j, i));
+					midpointGraph.setLabel(i, ("v" + j));
+				} else {
+					//build an adjacency matrix with the distance between each midpoint
+					astar.calcShortestPath(sections.get(i).midX, sections.get(i).midY, sections.get(j).midX, sections.get(j).midY);
+					//log.error("line 311.  iX: " + sections.get(i).midX + " iY: " + sections.get(j).midY);
+					midpointGraph.addEdge(i,j,astar.shortestPath.getLength());
+					midpointGraph.setLabel(i, ("v" + j));
+				}
+			} 
 		}
 		orderedSections = Prims.prim(midpointGraph, 0);
 	}

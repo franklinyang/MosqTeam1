@@ -36,19 +36,19 @@ public class AStar {
 		
 		//mark start and goal node
 		map.setStartLocation(startX, startY);
-		log.error("Start location is" + map.getStartLocationX());
 		map.setGoalLocation(goalX, goalY);
+		log.error("Start location is" + map.getStartLocationX());
+		log.error("Goal location is" + map.getGoalLocationX());
+		
 		
 		//Check if the goal node is blocked (if it is, it is impossible to find a path there)
 		if (map.getNode(goalX, goalY).isObstacle) {
 			return null;
 		}
-		
 		map.getStartNode().setDistanceFromStart(0);
 		closedList.clear();
 		openList.clear();
 		openList.add(map.getStartNode());
-		
 		//while we haven't reached the goal yet
 		while(openList.size() != 0) {
 			if (openList.size()%100 == 0) {
@@ -102,6 +102,7 @@ public class AStar {
 			}
 			
 		}
+
 		return null;
 	}
 	
@@ -117,7 +118,7 @@ public class AStar {
 				} else if (node.isStart) {
 					System.out.print("g");
 				} else if (shortestPath.contains(node.getX(), node.getY())) {
-					System.out.print("�");
+					System.out.print("���");
 				} else {
 					System.out.print(" ");
 				}
