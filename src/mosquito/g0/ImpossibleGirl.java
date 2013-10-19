@@ -69,13 +69,17 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		sectioningAlgorithm();
 		identifySections(pointLineRelationships);
 		
-//		sections = pruneSections(sections, walls);
+		// set the midpoints for each of the sections
+		for(int i = 0; i < sections.size(); i++) {
+			sections.get(i).setMidpoints();
+		}
+		
+		sections = this.pruneSections(sections, walls);
 		numberOfSections = sections.size();
 //		log.error(numberOfSections);
 		
 		for (int i=0; i<numberOfSections; i++) {
 			
-			sections.get(i).setMidpoints();
 			Point2D ul = new Point2D.Double(sections.get(i).midX-1, sections.get(i).midY-1);
 			Point2D ll = new Point2D.Double(sections.get(i).midX-1, sections.get(i).midY+1);
 			Point2D ur = new Point2D.Double(sections.get(i).midX+1, sections.get(i).midY-1);
@@ -108,15 +112,10 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		
 		lights = new HashSet<Light>();
 		mlights = new ArrayList<MoveableLight>();
-
-		// set the midpoints for each of the sections
-		for(int i = 0; i < sections.size(); i++) {
-			sections.get(i).setMidpoints();
-		}
 		
 		this.orderedSections = findOptimalRoute(board, numberOfSections, sections);
-		for(int i : orderedSections)
-			log.error(i);
+//		for(int i : orderedSections)
+//			log.error(i);
 	    
 //	    for (int i=0; i<numberOfSections; i++) {
 //	    	log.error("The " + i + "th point to visit is: " + orderedSections[i]);
@@ -174,7 +173,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 	
 	private ArrayList<Section> pruneSections(ArrayList<Section> sections, Set<Line2D> walls) {
 		int x1, x2, y1, y2;
-		log.error(sections.size());
+//		log.error(sections.size());
 		ArrayList<Section> prunedSections = new ArrayList<Section>();
 		for(int i = 0; i < sections.size(); i++) {
 			Section s = sections.get(i);
@@ -184,15 +183,9 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 				Section st = sections.get(j);
 				x2 = st.midX;
 				y2 = st.midY;
-				if (intersectsWall(x1, y1, x2, y2, walls)) {
-//					log.error("Inside");
-				}
-				this.walls.add(new Line2D.Double(new Point2D.Double(x1, y1), new Point2D.Double(x2, y2)));
-				if(ptDist(x1, y1, x2, y2) > 10) {
-					if(intersectsWall(x1, y1, x2, y2, walls)) {
-						prunedSections.add(s);
-						break;
-					}	
+				if(ptDist(x1, y1, x2, y2) > 10 && !intersectsWall(x1, y1, x2, y2, walls)) {
+					prunedSections.add(s);
+					break;
 				}
 			}
 		}
@@ -305,20 +298,18 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		  if (lineIsVertical) {
 		    //for vertical lines, assume that points to the left are lesser and points to the right are greater
 				if (x < line.getX1()) return 0;
-	    else return 1;
+				else return 1;
 		} else {
-	    //find the slope and intercept of the line given
-	    double slope = (line.getY2()-line.getY1()) / (line.getX2()-line.getX1());
-	    double yIntercept = line.getY1() - (slope*line.getX1());
-	    //identify if point is above or below line
-	    if (y > slope * x + yIntercept) return 1;
-	    else return 0;
+		    //find the slope and intercept of the line given
+		    double slope = (line.getY2()-line.getY1()) / (line.getX2()-line.getX1());
+		    double yIntercept = line.getY1() - (slope*line.getX1());
+		    //identify if point is above or below line
+		    if (y > slope * x + yIntercept) return 1;
+		    else return 0;
 		}
 	}
 	
-	public 
-	
-	void identifySections(int[][][] pointLineRelationships) {
+	public void identifySections(int[][][] pointLineRelationships) {
 		numberOfSections=0;
 		for (int x=0; x<100; x++) {
 			for (int y=0; y<100; y++) {
