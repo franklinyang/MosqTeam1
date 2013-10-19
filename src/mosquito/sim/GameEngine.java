@@ -181,8 +181,9 @@ public final class GameEngine
 				for (int i = 0; i < lights.size(); i++) {
 					Light a = (Light)lightArray[i];
 					if (distance(a.getX(), a.getY(), xCoords[i], yCoords[i]) > 1) {
+						System.err.println("("+a.getX()+","+a.getY()+") --> "+"("+xCoords[i]+","+yCoords[i]+")");
 					//if ((Math.abs(a.getX()-xCoords[i]) > 1) || (Math.abs(a.getY() - yCoords[i]) > 1)) {
-						System.err.println("ERROR! light moved by more than one!");
+						System.err.println("ERROR! light moved by more than one!" + distance(a.getX(), a.getY(), xCoords[i], yCoords[i]));
 						System.exit(-1);
 					}
 					

@@ -83,7 +83,6 @@ public class FPlayer extends mosquito.sim.Player {
                 return lines;
         }
 
-
         /*
          * This is used to determine the initial placement of the lights.
          * It is called after startNewGame.
@@ -123,7 +122,7 @@ public class FPlayer extends mosquito.sim.Player {
                     
                     log.error("current iteration is " + a + " and we are done with calculating aStar");
                     
-                    l.shortestPath = astar.shortestPath;
+                    l.shortestPaths.add(astar.shortestPath);
                     mlights.add(l);
             }
             
@@ -144,7 +143,7 @@ public class FPlayer extends mosquito.sim.Player {
 		for (MoveableLight ml : mlights) {
 //			MoveableLight ml = (MoveableLight)l;
 //			currAStar = ml.astar;
-			Path shortest = ml.shortestPath;
+			Path shortest = ml.shortestPaths.get(0);
 			if (move >= shortest.getLength())
 				continue;
 				

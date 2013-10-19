@@ -1,6 +1,8 @@
 package mosquito.sim;
 
 import java.awt.geom.Line2D;
+import java.awt.geom.Point2D;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -9,7 +11,13 @@ import mosquito.g0.Path;
 
 public class MoveableLight extends Light {
 	
+	public ArrayList<Path> shortestPaths;
 	public Path shortestPath;
+	public ArrayList<Point2D> waypoints;
+	public int move = 0;
+	public int indexOfPath = 0;
+	// how will this handle the case where we have fewer lights than sections?
+	public Path currPath;
 	public double currDestinationX;
 	public double currDestinationY;
 	
@@ -31,6 +39,9 @@ public class MoveableLight extends Light {
 	public MoveableLight(double x, double y, boolean on) {
 		super(x, y, 0, 0, 0);
 		isLightOn = on;
+		waypoints = new ArrayList<Point2D>();
+		shortestPaths = new ArrayList<Path>();
+		shortestPath = new Path();
 	}
 	
 	private boolean isLightOn = true;

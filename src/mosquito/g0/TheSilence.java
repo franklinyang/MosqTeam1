@@ -8,7 +8,10 @@ import java.awt.geom.Line2D.Double;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
@@ -18,9 +21,7 @@ import mosquito.sim.Collector;
 import mosquito.sim.Light;
 import mosquito.sim.MoveableLight;
 
-
-
-public class ImpossibleGirl extends mosquito.sim.Player {
+public class TheSilence extends mosquito.sim.Player {
 	class Section {
 		  int[] boolCombo;
 		  ArrayList<Integer> xPoints;
@@ -41,7 +42,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		  }
 		  //boolean through; //describes if there are multiple entrances into the section;
 		  void printDetails() {
-//			  log.debug("boolCombo: " + Arrays.toString(boolCombo));
+			  log.debug("boolCombo: " + Arrays.toString(boolCombo));
 			  //  log.trace("Area: " + this.area + ", endpoints: " + Arrays.toString(this.endpoints) + ", through? " + through);
 		  }
 		  
@@ -116,8 +117,8 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 			lines.add(c1);
 			lines.add(c2);
 			
-//			System.err.println("Section " + i + " midpoint: (" + sections.get(i).midX +
-//				" , " + sections.get(i).midY + ")");
+			System.err.println("Section " + i + " midpoint: (" + sections.get(i).midX +
+				" , " + sections.get(i).midY + ")");
 		}
 		
 		return lines;
@@ -149,24 +150,17 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 			sections.get(i).setMidpoints();
 		}
 		
-
-		findOptimalRoute(board);
-	    
-	    for (int i=0; i<numberOfSections; i++) {
-	    	log.error("The " + i + "th point to visit is: " + orderedSections[i]);
-	    }
-	    
 		// add a list of waypoints to each light
 		int index;
 		Point2D waypoint;
 		AreaMap correctMap = generateAreaMap(board, walls);
-		for(int i = 0; i < numberOfSections; i++) {
+		for(int i = 0; i < sections.size(); i++) {
 			index = i % numLights;
-			waypoint = new Point2D.Double(sections.get(orderedSections[i]).midX, sections.get(orderedSections[i]).midY);
-			if (!correctMap.getNodes().get(sections.get(orderedSections[i]).midX).get(sections.get(orderedSections[i]).midY).isObstacle) {
+			waypoint = new Point2D.Double(sections.get(i).midX, sections.get(i).midY);
+			if (!correctMap.getNodes().get(sections.get(i).midX).get(sections.get(i).midY).isObstacle) {
 				mlights.get(index).waypoints.add(waypoint);
-				this.collectorX = sections.get(orderedSections[i]).midX;
-				this.collectorY = sections.get(orderedSections[i]).midY;
+				this.collectorX = sections.get(i).midX;
+				this.collectorY = sections.get(i).midY;
 			}
 		}
 		
@@ -194,7 +188,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 			// initialize paths to first path
 			currLight.currPath = currLight.shortestPaths.get(0);
 		}
-	    
+		
 		return lights;
 	}
 	
@@ -211,6 +205,17 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		}
 		
 		return cleanMap;
+//<<<<<<< HEAD
+//		return cleanMap;
+//		log.error("line 172");
+//	    findOptimalRoute(board);
+//	    
+//	    for (int i=0; i<numberOfSections; i++) {
+//	    	log.error("The " + i + "th point to visit is: " + orderedSections[i]);
+//	    }
+//	    
+//	    return lights;
+//>>>>>>> 065105f3213078acc356d2cce1fce18a7c60f984
 	}
 	
 	/*
@@ -229,29 +234,29 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 				ml.indexOfPath++;
 				if(ml.indexOfPath >= ml.shortestPaths.size())
 					continue;
-//				System.err.println(ml.indexOfPath + " compared to " + ml.shortestPath.size());
+				System.err.println(ml.indexOfPath + " compared to " + ml.shortestPaths.size());
 				ml.currPath = ml.shortestPaths.get(ml.indexOfPath);
 				continue;
 			}
 			// check to see if we're done moving
-//			System.err.println("ml.move is "+ml.move);
-//			System.err.println("CurrPath.getLength() is "+currPath.getLength());
+			System.err.println("ml.move is "+ml.move);
+			System.err.println("CurrPath.getLength() is "+currPath.getLength());
 			if (ml.move >= currPath.getLength()) {
-//				System.err.println("Hitting a null pointer?");
+				System.err.println("Hitting a null pointer?");
 				// check to see if we're done with all paths to waypoints
 				ml.indexOfPath++;
 				if (ml.indexOfPath >= (ml.shortestPaths.size())) {
-//					System.err.println("Continued ml.indexOfPath >= ml.shortestPath.size()");
+					System.err.println("Continued ml.indexOfPath >= ml.shortestPath.size()");
 					continue;
 				}
 				
 				ml.currPath = ml.shortestPaths.get(ml.indexOfPath);
 				ml.move = 0;
-//				System.err.println("Continued ml.move >= currPath.getLength()");
+				System.err.println("Continued ml.move >= currPath.getLength()");
 				continue;
 			}
 			
-//			log.error("("+ml.getX()+","+ml.getY()+") --> "+"("+currPath.getX(ml.move)+","+currPath.getY(ml.move)+")");
+			log.error("("+ml.getX()+","+ml.getY()+") --> "+"("+currPath.getX(ml.move)+","+currPath.getY(ml.move)+")");
 			ml.moveTo(currPath.getX(ml.move), currPath.getY(ml.move));
 			ml.move++;
 		}
@@ -345,6 +350,9 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		
 		// initializing AStar
 		FHeuristic fh = new FHeuristic();
+		lights = new HashSet<Light>();
+		lastLight = new Point2D.Double(10, 10);
+		mlights = new ArrayList<MoveableLight>();
 		AreaMap cleanMap = new AreaMap(100,100);
 	    for(int i = 0; i < board.length; i++) {
 	        for(int j = 0; j < board[0].length; j++) {
@@ -358,39 +366,45 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		astar = new AStar(cleanMap, fh);
 		
 		for (int i=0; i<numberOfSections; i++) {
-			cleanMap = new AreaMap(100,100);
-		    for(int k = 0; k < board.length; k++) {
-		        for(int l = 0; l < board[0].length; l++) {
-		            for(Line2D wall: walls) {
-		                if(wall.ptSegDist(k, l) < 2.0) {
-		                	cleanMap.getNodes().get(k).get(l).isObstacle = true; // nay on the current node
-		                }
-		            }
-		        }
-		    }
-			astar = new AStar(cleanMap, fh);
 			for (int j=0; j<numberOfSections; j++) {
-				if (i==j) {
-					midpointGraph.addEdge(i,j,0); 
-					midpointGraph.setLabel(i, ("v" + j));
-				} else if (i>j) {
-					midpointGraph.addEdge(i, j, midpointGraph.getWeight(j, i));
-					midpointGraph.setLabel(i, ("v" + j));
-				} else {
-					//build an adjacency matrix with the distance between each midpoint
-					astar.calcShortestPath(sections.get(i).midX, sections.get(i).midY, sections.get(j).midX, sections.get(j).midY);
-					//log.error("line 311.  iX: " + sections.get(i).midX + " iY: " + sections.get(j).midY);
-					if (astar.shortestPath == null) {
-						//TODO: This is hacky
-						midpointGraph.addEdge(i,  j, 500);
-					} else {
-						midpointGraph.addEdge(i,j,astar.shortestPath.getLength());
-						midpointGraph.setLabel(i, ("v" + j));
-					}
-				}
-			} 
+				//build an adjacency matrix with the distance between each midpoint
+				astar.calcShortestPath(sections.get(i).midX, sections.get(i).midY, sections.get(j).midX, sections.get(j).midY);
+				//log.error("line 311.  iX: " + sections.get(i).midX + " iY: " + sections.get(j).midY);
+				midpointGraph.addEdge(i,j,astar.shortestPath.getLength());
+				midpointGraph.setLabel(i, ("v" + i));
+			}
 		}
 		orderedSections = Prims.prim(midpointGraph, 0);
 	}
+	
+	public List<Point2D.Double> getMosquitoLocationsByDistance(int[][] board) {
+        List<Point2D.Double> result = new ArrayList<Point2D.Double>();
+        for(int i = 0; i < 100; i++) {
+            for(int j = 0; j < 100; j++) {
+                if(i < 95 && (j < 48 || j > 52)) {
+                    if(board[i][j] != 0) {
+                        result.add(new Point2D.Double(i, j));
+                    }
+                }
+            }
+        }
+        Collections.sort(result, new Comparator<Point2D.Double>() {
+            @Override
+            public int compare(Point2D.Double o1, Point2D.Double o2) {
+                Point2D.Double origin = new Point2D.Double(97, 50);
+                double o1Distance = origin.distance(o1);
+                double o2Distance = origin.distance(o2);
+                if(o1Distance > o2Distance) {
+                    return 1;
+                }
+                else if(o2Distance > o1Distance) {
+                    return -1;
+                }
+                return 0;
+            }
+        });
+        
+        return result;
+    }
 }
 
