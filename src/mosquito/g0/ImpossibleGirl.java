@@ -43,8 +43,9 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 	
 	// related to sections
 	private int pointLineRelationships[][][];
-	private int numberOfSections;
 	private ArrayList<Section> sections = new ArrayList<Section>();
+	int numberOfSections;
+//	ArrayList<Section> prunedSections;
 	
 	// related to prims
 	private WeightedGraph midpointGraph;
@@ -67,6 +68,11 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		ArrayList<Line2D> lines = new ArrayList<Line2D>();
 		sectioningAlgorithm();
 		identifySections(pointLineRelationships);
+		
+//		sections = pruneSections(sections, walls);
+		numberOfSections = sections.size();
+//		log.error(numberOfSections);
+		
 		for (int i=0; i<numberOfSections; i++) {
 			
 			sections.get(i).setMidpoints();
@@ -108,9 +114,9 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 			sections.get(i).setMidpoints();
 		}
 		
-		this.orderedSections = findOptimalRoute(board);
-//		for(int i : orderedSections)
-//			log.error(i);
+		this.orderedSections = findOptimalRoute(board, numberOfSections, sections);
+		for(int i : orderedSections)
+			log.error(i);
 	    
 //	    for (int i=0; i<numberOfSections; i++) {
 //	    	log.error("The " + i + "th point to visit is: " + orderedSections[i]);
@@ -166,6 +172,49 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		return lights;
 	}
 	
+	private ArrayList<Section> pruneSections(ArrayList<Section> sections, Set<Line2D> walls) {
+		int x1, x2, y1, y2;
+		log.error(sections.size());
+		ArrayList<Section> prunedSections = new ArrayList<Section>();
+		for(int i = 0; i < sections.size(); i++) {
+			Section s = sections.get(i);
+			x1 = s.midX;
+			y1 = s.midY;
+			for(int j = i+1; j < sections.size(); j++) {
+				Section st = sections.get(j);
+				x2 = st.midX;
+				y2 = st.midY;
+				if (intersectsWall(x1, y1, x2, y2, walls)) {
+//					log.error("Inside");
+				}
+				this.walls.add(new Line2D.Double(new Point2D.Double(x1, y1), new Point2D.Double(x2, y2)));
+				if(ptDist(x1, y1, x2, y2) > 10) {
+					if(intersectsWall(x1, y1, x2, y2, walls)) {
+						prunedSections.add(s);
+						break;
+					}	
+				}
+			}
+		}
+		return sections;
+	}
+	
+	private int ptDist(int x1, int y1, int x2, int y2) {
+		return (int)Math.sqrt(Math.pow(x2-x1, 2) + Math.pow(y2-y1, 2));
+	}
+	
+	private boolean intersectsWall(int x1, int y1, int x2, int y2, Set<Line2D> walls) {
+		Point2D p1 = new Point2D.Double(x1, y1);
+		Point2D p2 = new Point2D.Double(x2, y2);
+		Line2D l = new Line2D.Double(p1, p2);
+		for (Line2D w : walls) {
+			if(w.intersectsLine(l))
+				return true;
+		}
+		return false;
+	}
+
+
 	public AreaMap generateAreaMap(int[][] board, Set<Line2D> walls) {
 		AreaMap cleanMap = new AreaMap(100,100);
 		for(int i = 0; i < board.length; i++) {
@@ -267,6 +316,8 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		}
 	}
 	
+	public 
+	
 	void identifySections(int[][][] pointLineRelationships) {
 		numberOfSections=0;
 		for (int x=0; x<100; x++) {
@@ -305,7 +356,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		}
 	}
 	
-	int[] findOptimalRoute(int[][] board) {
+	int[] findOptimalRoute(int[][] board, int numberOfSections, ArrayList<Section> sections) {
 		/* initialize a weighted graph, where each node 
 		is a midpoint and the weights represent the actual distances between them, taking obstacles into account */
 		WeightedGraph midpointGraph = new WeightedGraph(numberOfSections); 
