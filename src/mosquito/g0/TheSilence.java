@@ -22,42 +22,6 @@ import mosquito.sim.Light;
 import mosquito.sim.MoveableLight;
 
 public class TheSilence extends mosquito.sim.Player {
-	class Section {
-		  int[] boolCombo;
-		  ArrayList<Integer> xPoints;
-		  ArrayList<Integer> yPoints;
-		  int maxX;
-		  int minX;
-		  int maxY;
-		  int minY;
-		  int midX;
-		  int midY;
-		  
-		  boolean visited = false;
-		  
-		  public Section() {
-			  boolCombo = new int[walls.size()];
-			  xPoints = new ArrayList<Integer>();
-			  yPoints = new ArrayList<Integer>();
-		  }
-		  //boolean through; //describes if there are multiple entrances into the section;
-		  void printDetails() {
-			  log.debug("boolCombo: " + Arrays.toString(boolCombo));
-			  //  log.trace("Area: " + this.area + ", endpoints: " + Arrays.toString(this.endpoints) + ", through? " + through);
-		  }
-		  
-		  void setMidpoints() {
-			  int sumX = 0;
-			  int sumY = 0;
-			  int len = xPoints.size();
-			  for (int i = 0; i < len; i++) {
-				  sumX += xPoints.get(i);
-				  sumY += yPoints.get(i);
-			  }
-			  this.midX = sumX/len;
-			  this.midY = sumY/len;
-		  }
-	}
 	
 	private int collectorX;
 	private int collectorY;
@@ -205,17 +169,6 @@ public class TheSilence extends mosquito.sim.Player {
 		}
 		
 		return cleanMap;
-//<<<<<<< HEAD
-//		return cleanMap;
-//		log.error("line 172");
-//	    findOptimalRoute(board);
-//	    
-//	    for (int i=0; i<numberOfSections; i++) {
-//	    	log.error("The " + i + "th point to visit is: " + orderedSections[i]);
-//	    }
-//	    
-//	    return lights;
-//>>>>>>> 065105f3213078acc356d2cce1fce18a7c60f984
 	}
 	
 	/*
@@ -327,7 +280,7 @@ public class TheSilence extends mosquito.sim.Player {
 		      } 
 		    } 
 		    if (!hasComboBeenSeen) {
-		        Section newSection = new Section();
+		        Section newSection = new Section(walls.size());
 		        newSection.boolCombo=pointLineRelationships[x][y];
 		        newSection.xPoints.add(x);
 		        newSection.yPoints.add(y);

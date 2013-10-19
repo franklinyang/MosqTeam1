@@ -37,13 +37,13 @@ public class AStar {
 		//mark start and goal node
 		map.setStartLocation(startX, startY);
 		map.setGoalLocation(goalX, goalY);
-		log.error("Start location is" + map.getStartLocationX());
-		log.error("Goal location is" + map.getGoalLocationX());
+//		log.error("Start location is" + map.getStartLocationX());
+//		log.error("Goal location is" + map.getGoalLocationX());
 		
 		
 		//Check if the goal node is blocked (if it is, it is impossible to find a path there)
 		if (map.getNode(goalX, goalY).isObstacle) {
-			log.error("This is our problem, line 46");
+//			log.error("Obstacle at " + goalX + "," + goalY);
 			return null;
 		}
 		map.getStartNode().setDistanceFromStart(0);

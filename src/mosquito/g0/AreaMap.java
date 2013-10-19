@@ -21,9 +21,9 @@ public class AreaMap {
 		this.mapHeight = mapHeight;
 		
 		createMap();
-		log.error("\tMap Created");
+//		log.error("\tMap Created");
 		registerEdges();
-		log.error("\tMap Node edges registered");
+//		log.error("\tMap Node edges registered");
 	}
 	private void createMap() {
 		map = new ArrayList<ArrayList<Node>>();

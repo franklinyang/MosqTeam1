@@ -21,67 +21,32 @@ import mosquito.sim.MoveableLight;
 
 
 public class ImpossibleGirl extends mosquito.sim.Player {
-	class Section {
-		  int[] boolCombo;
-		  ArrayList<Integer> xPoints;
-		  ArrayList<Integer> yPoints;
-		  int maxX;
-		  int minX;
-		  int maxY;
-		  int minY;
-		  int midX;
-		  int midY;
-		  
-		  boolean visited = false;
-		  
-		  public Section() {
-			  boolCombo = new int[walls.size()];
-			  xPoints = new ArrayList<Integer>();
-			  yPoints = new ArrayList<Integer>();
-		  }
-		  //boolean through; //describes if there are multiple entrances into the section;
-		  void printDetails() {
-//			  log.debug("boolCombo: " + Arrays.toString(boolCombo));
-			  //  log.trace("Area: " + this.area + ", endpoints: " + Arrays.toString(this.endpoints) + ", through? " + through);
-		  }
-		  
-		  void setMidpoints() {
-			  int sumX = 0;
-			  int sumY = 0;
-			  int len = xPoints.size();
-			  for (int i = 0; i < len; i++) {
-				  sumX += xPoints.get(i);
-				  sumY += yPoints.get(i);
-			  }
-			  this.midX = sumX/len;
-			  this.midY = sumY/len;
-		  }
-	}
-	
-	private int collectorX;
-	private int collectorY;
-
-	private int numLights;
-	private Point2D.Double lastLight;
-	private Logger log = Logger.getLogger(this.getClass()); // for logging
 	
 	@Override
 	public String getName() {
 		return "I section things";
 	}
 	
+	// general instance variables relevant to our problem
 	private Set<Light> lights;
 	private Set<Line2D> walls;
+	private int collectorX;
+	private int collectorY;
+	private int numLights;
+	private Logger log = Logger.getLogger(this.getClass()); // for logging
 	
+	// related to lights
 	private ArrayList<MoveableLight> mlights;
-	private AreaMap map;
-	private AStar astar;
-	private int move;
 	
+	// related to astar
+	private AStar astar;
+	
+	// related to sections
 	private int pointLineRelationships[][][];
 	private int numberOfSections;
 	private ArrayList<Section> sections = new ArrayList<Section>();
 	
+	// related to prims
 	private WeightedGraph midpointGraph;
 	private int[] orderedSections;
 	
@@ -137,24 +102,27 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		
 		lights = new HashSet<Light>();
 		mlights = new ArrayList<MoveableLight>();
-		
-		// initially position each of the nights
-		for (int i = 0; i < numLights; i++) {
-			MoveableLight l = new MoveableLight(sections.get(i).midX, sections.get(i).midY, true);
-			mlights.add(l);
-			lights.add(l);
-		}
-		
+
+		// set the midpoints for each of the sections
 		for(int i = 0; i < sections.size(); i++) {
 			sections.get(i).setMidpoints();
 		}
 		
-
-		findOptimalRoute(board);
+		this.orderedSections = findOptimalRoute(board);
+//		for(int i : orderedSections)
+//			log.error(i);
 	    
-	    for (int i=0; i<numberOfSections; i++) {
-	    	log.error("The " + i + "th point to visit is: " + orderedSections[i]);
-	    }
+//	    for (int i=0; i<numberOfSections; i++) {
+//	    	log.error("The " + i + "th point to visit is: " + orderedSections[i]);
+//	    }
+		
+		// initially position each of the nights
+		for (int i = 0; i < numLights; i++) {
+			int sectionIndex = orderedSections[i];
+			MoveableLight l = new MoveableLight(sections.get(sectionIndex).midX, sections.get(sectionIndex).midY, true);
+			mlights.add(l);
+			lights.add(l);
+		}
 	    
 		// add a list of waypoints to each light
 		int index;
@@ -322,7 +290,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		      } 
 		    } 
 		    if (!hasComboBeenSeen) {
-		        Section newSection = new Section();
+		        Section newSection = new Section(walls.size());
 		        newSection.boolCombo=pointLineRelationships[x][y];
 		        newSection.xPoints.add(x);
 		        newSection.yPoints.add(y);
@@ -337,11 +305,11 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		}
 	}
 	
-	void findOptimalRoute(int[][] board) {
+	int[] findOptimalRoute(int[][] board) {
 		/* initialize a weighted graph, where each node 
 		is a midpoint and the weights represent the actual distances between them, taking obstacles into account */
-		midpointGraph = new WeightedGraph(numberOfSections); 
-		orderedSections = new int[numberOfSections];
+		WeightedGraph midpointGraph = new WeightedGraph(numberOfSections); 
+		int[] orderedSections = new int[numberOfSections];
 		
 		// initializing AStar
 		FHeuristic fh = new FHeuristic();
@@ -391,6 +359,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 			} 
 		}
 		orderedSections = Prims.prim(midpointGraph, 0);
+		return orderedSections;
 	}
 }
 

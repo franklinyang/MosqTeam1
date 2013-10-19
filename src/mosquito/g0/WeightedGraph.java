@@ -20,7 +20,7 @@ public class WeightedGraph {
      public Object getLabel (int vertex)               { return labels[vertex]; }
   
      public void    addEdge    (int source, int target, int w)  { 
-    	 log.error("adding edge: (" + source + "," + target + ") with weight: " + w);
+//    	 log.error("adding edge: (" + source + "," + target + ") with weight: " + w);
     	 edges[source][target] = w; }
      public boolean isEdge     (int source, int target)  { return edges[source][target]>0; }
      public void    removeEdge (int source, int target)  { edges[source][target] = 0; }
