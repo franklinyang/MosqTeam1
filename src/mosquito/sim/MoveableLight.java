@@ -16,6 +16,9 @@ public class MoveableLight extends Light {
 	public int numTurnsAtCorner = 0;
 	public boolean hasStoppedAtCorner = false;
 	public int numMovesSinceStopped = 0;
+	public boolean hasReachedRightSide = false;
+	public int numMovesAtCollector = 0;
+	public int numMovesAtCollector2 = 0;
 	
 	public enum Corner {
 		NW, NE, SE, SW
