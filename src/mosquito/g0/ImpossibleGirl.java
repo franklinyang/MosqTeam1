@@ -18,8 +18,6 @@ import mosquito.sim.Collector;
 import mosquito.sim.Light;
 import mosquito.sim.MoveableLight;
 
-
-
 public class ImpossibleGirl extends mosquito.sim.Player {
 	
 	@Override
@@ -76,7 +74,6 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 				
 		sections = this.pruneSections(sections, walls);
 		numberOfSections = sections.size();
-		log.error(numberOfSections);
 		
 		for (int i=0; i<numberOfSections; i++) {
 			
@@ -91,10 +88,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 			lines.add(c1);
 			lines.add(c2);
 			
-//			System.err.println("Section " + i + " midpoint: (" + sections.get(i).midX +
-//				" , " + sections.get(i).midY + ")");
 		}
-		
 		return lines;
 	}
 
@@ -116,10 +110,6 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		this.orderedSections = findOptimalRoute(board, numberOfSections, sections);
 //		for(int i : orderedSections)
 //			log.error(i);
-	    
-//	    for (int i=0; i<numberOfSections; i++) {
-//	    	log.error("The " + i + "th point to visit is: " + orderedSections[i]);
-//	    }
 		
 		// initially position each of the nights
 		for (int i = 0; i < numLights; i++) {
@@ -219,7 +209,6 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		        }
 		    }
 		}
-		
 		return cleanMap;
 	}
 	
