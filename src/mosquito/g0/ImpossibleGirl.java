@@ -73,10 +73,10 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		for(int i = 0; i < sections.size(); i++) {
 			sections.get(i).setMidpoints();
 		}
-		
+				
 		sections = this.pruneSections(sections, walls);
 		numberOfSections = sections.size();
-//		log.error(numberOfSections);
+		log.error(numberOfSections);
 		
 		for (int i=0; i<numberOfSections; i++) {
 			
@@ -173,8 +173,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 	
 	private ArrayList<Section> pruneSections(ArrayList<Section> sections, Set<Line2D> walls) {
 		int x1, x2, y1, y2;
-//		log.error(sections.size());
-		ArrayList<Section> prunedSections = new ArrayList<Section>();
+		ArrayList<Section> prunedSections = sections;
 		for(int i = 0; i < sections.size(); i++) {
 			Section s = sections.get(i);
 			x1 = s.midX;
@@ -183,13 +182,14 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 				Section st = sections.get(j);
 				x2 = st.midX;
 				y2 = st.midY;
-				if(ptDist(x1, y1, x2, y2) > 10 && !intersectsWall(x1, y1, x2, y2, walls)) {
-					prunedSections.add(s);
+				if(ptDist(x1, y1, x2, y2) < 15 && !intersectsWall(x1, y1, x2, y2, walls)) {
+					prunedSections.remove(s);
 					break;
 				}
 			}
 		}
-		return sections;
+		log.error("Pruned Section size is: " + prunedSections.size());
+		return prunedSections;
 	}
 	
 	private int ptDist(int x1, int y1, int x2, int y2) {
