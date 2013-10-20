@@ -156,46 +156,46 @@ public class SweepPlayer extends mosquito.sim.Player {
         numLightsToSpacingMap.put(4, 22);
         numLightsToSpacingMap.put(3, 33);
         numLightsToSpacingMap.put(1, 22);
-        // creating game borders
-        Point2D.Double uR = new Point2D.Double(0, 100.0);
-        Point2D.Double uL = new Point2D.Double(0, 0);
-        Point2D.Double lL = new Point2D.Double(0, 100.0);
-        Point2D.Double lR = new Point2D.Double(100.0, 100.0);
-        
-        Line2D l = new Line2D.Double(uL, lL);
-        Line2D r = new Line2D.Double(uR, lR);
-        Line2D u = new Line2D.Double(uL, uR);
-        Line2D d = new Line2D.Double(lL, lR);
-        
-        Section boundary = new Section(l, r, u, d);
-        ArrayList<Double> sortedVerticalLines = new ArrayList<Double>();
-        boardSections.add(boundary);
-        
-        for (Line2D w : walls) {
-            double x1 = w.getX1();
-            double x2 = w.getX2();
-            double y1 = w.getY1();
-            double y2 = w.getY2();
-            
-            // dealing with vertical lines first
-            if (w.getX1() == w.getX2()) {
-                verticalLines.add(new Line2D.Double(new Point2D.Double(x1, 0), new Point2D.Double(x1, 100)));
-                sortedVerticalLines.add(w.getX1());
-                continue;
-            }
-            
-            Point2D.Double mid = this.getMidpoint(w);
-            midpoints.add(mid);
-            
-            Line2D ext = this.extendLine(w);
-            extendedLines.add(ext);
-            lines.add(ext);
-        }
-        
-        // subdivide by vertical sections
-        for(int i = 0; i < verticalLines.size(); i++) {
-            // need to segment by vertical section...
-        }
+//        // creating game borders
+//        Point2D.Double uR = new Point2D.Double(0, 100.0);
+//        Point2D.Double uL = new Point2D.Double(0, 0);
+//        Point2D.Double lL = new Point2D.Double(0, 100.0);
+//        Point2D.Double lR = new Point2D.Double(100.0, 100.0);
+//        
+//        Line2D l = new Line2D.Double(uL, lL);
+//        Line2D r = new Line2D.Double(uR, lR);
+//        Line2D u = new Line2D.Double(uL, uR);
+//        Line2D d = new Line2D.Double(lL, lR);
+//        
+//        Section boundary = new Section(l, r, u, d);
+//        ArrayList<Double> sortedVerticalLines = new ArrayList<Double>();
+//        boardSections.add(boundary);
+//        
+//        for (Line2D w : walls) {
+//            double x1 = w.getX1();
+//            double x2 = w.getX2();
+//            double y1 = w.getY1();
+//            double y2 = w.getY2();
+//            
+//            // dealing with vertical lines first
+//            if (w.getX1() == w.getX2()) {
+//                verticalLines.add(new Line2D.Double(new Point2D.Double(x1, 0), new Point2D.Double(x1, 100)));
+//                sortedVerticalLines.add(w.getX1());
+//                continue;
+//            }
+//            
+//            Point2D.Double mid = this.getMidpoint(w);
+//            midpoints.add(mid);
+//            
+//            Line2D ext = this.extendLine(w);
+//            extendedLines.add(ext);
+//            lines.add(ext);
+//        }
+//        
+//        // subdivide by vertical sections
+//        for(int i = 0; i < verticalLines.size(); i++) {
+//            // need to segment by vertical section...
+//        }
         
         return lines;
     }
