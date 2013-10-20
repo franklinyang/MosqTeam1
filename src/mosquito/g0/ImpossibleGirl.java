@@ -18,70 +18,34 @@ import mosquito.sim.Collector;
 import mosquito.sim.Light;
 import mosquito.sim.MoveableLight;
 
-
-
 public class ImpossibleGirl extends mosquito.sim.Player {
-	class Section {
-		  int[] boolCombo;
-		  ArrayList<Integer> xPoints;
-		  ArrayList<Integer> yPoints;
-		  int maxX;
-		  int minX;
-		  int maxY;
-		  int minY;
-		  int midX;
-		  int midY;
-		  
-		  boolean visited = false;
-		  
-		  public Section() {
-			  boolCombo = new int[walls.size()];
-			  xPoints = new ArrayList<Integer>();
-			  yPoints = new ArrayList<Integer>();
-		  }
-		  //boolean through; //describes if there are multiple entrances into the section;
-		  void printDetails() {
-//			  log.debug("boolCombo: " + Arrays.toString(boolCombo));
-			  //  log.trace("Area: " + this.area + ", endpoints: " + Arrays.toString(this.endpoints) + ", through? " + through);
-		  }
-		  
-		  void setMidpoints() {
-			  int sumX = 0;
-			  int sumY = 0;
-			  int len = xPoints.size();
-			  for (int i = 0; i < len; i++) {
-				  sumX += xPoints.get(i);
-				  sumY += yPoints.get(i);
-			  }
-			  this.midX = sumX/len;
-			  this.midY = sumY/len;
-		  }
-	}
-	
-	private int collectorX;
-	private int collectorY;
-
-	private int numLights;
-	private Point2D.Double lastLight;
-	private Logger log = Logger.getLogger(this.getClass()); // for logging
 	
 	@Override
 	public String getName() {
 		return "I section things";
 	}
 	
+	// general instance variables relevant to our problem
 	private Set<Light> lights;
 	private Set<Line2D> walls;
+	private int collectorX;
+	private int collectorY;
+	private int numLights;
+	private Logger log = Logger.getLogger(this.getClass()); // for logging
 	
+	// related to lights
 	private ArrayList<MoveableLight> mlights;
-	private AreaMap map;
+	
+	// related to astar
 	private AStar astar;
-	private int move;
 	
+	// related to sections
 	private int pointLineRelationships[][][];
-	private int numberOfSections;
 	private ArrayList<Section> sections = new ArrayList<Section>();
+	int numberOfSections;
+//	ArrayList<Section> prunedSections;
 	
+	// related to prims
 	private WeightedGraph midpointGraph;
 	private int[] orderedSections;
 	
@@ -102,9 +66,17 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		ArrayList<Line2D> lines = new ArrayList<Line2D>();
 		sectioningAlgorithm();
 		identifySections(pointLineRelationships);
+		
+		// set the midpoints for each of the sections
+		for(int i = 0; i < sections.size(); i++) {
+			sections.get(i).setMidpoints();
+		}
+				
+		sections = this.pruneSections(sections, walls);
+		numberOfSections = sections.size();
+		
 		for (int i=0; i<numberOfSections; i++) {
 			
-			sections.get(i).setMidpoints();
 			Point2D ul = new Point2D.Double(sections.get(i).midX-1, sections.get(i).midY-1);
 			Point2D ll = new Point2D.Double(sections.get(i).midX-1, sections.get(i).midY+1);
 			Point2D ur = new Point2D.Double(sections.get(i).midX+1, sections.get(i).midY-1);
@@ -116,10 +88,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 			lines.add(c1);
 			lines.add(c2);
 			
-//			System.err.println("Section " + i + " midpoint: (" + sections.get(i).midX +
-//				" , " + sections.get(i).midY + ")");
 		}
-		
 		return lines;
 	}
 
@@ -138,23 +107,17 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		lights = new HashSet<Light>();
 		mlights = new ArrayList<MoveableLight>();
 		
+		this.orderedSections = findOptimalRoute(board, numberOfSections, sections);
+//		for(int i : orderedSections)
+//			log.error(i);
+		
 		// initially position each of the nights
 		for (int i = 0; i < numLights; i++) {
-			MoveableLight l = new MoveableLight(sections.get(i).midX, sections.get(i).midY, true);
+			int sectionIndex = orderedSections[i];
+			MoveableLight l = new MoveableLight(sections.get(sectionIndex).midX, sections.get(sectionIndex).midY, true);
 			mlights.add(l);
 			lights.add(l);
 		}
-		
-		for(int i = 0; i < sections.size(); i++) {
-			sections.get(i).setMidpoints();
-		}
-		
-
-		findOptimalRoute(board);
-	    
-	    for (int i=0; i<numberOfSections; i++) {
-	    	log.error("The " + i + "th point to visit is: " + orderedSections[i]);
-	    }
 	    
 		// add a list of waypoints to each light
 		int index;
@@ -198,6 +161,43 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		return lights;
 	}
 	
+	private ArrayList<Section> pruneSections(ArrayList<Section> sections, Set<Line2D> walls) {
+		int x1, x2, y1, y2;
+		ArrayList<Section> prunedSections = sections;
+		for(int i = 0; i < sections.size(); i++) {
+			Section s = sections.get(i);
+			x1 = s.midX;
+			y1 = s.midY;
+			for(int j = i+1; j < sections.size(); j++) {
+				Section st = sections.get(j);
+				x2 = st.midX;
+				y2 = st.midY;
+				if(ptDist(x1, y1, x2, y2) < 15 && !intersectsWall(x1, y1, x2, y2, walls)) {
+					prunedSections.remove(s);
+					break;
+				}
+			}
+		}
+		log.error("Pruned Section size is: " + prunedSections.size());
+		return prunedSections;
+	}
+	
+	private int ptDist(int x1, int y1, int x2, int y2) {
+		return (int)Math.sqrt(Math.pow(x2-x1, 2) + Math.pow(y2-y1, 2));
+	}
+	
+	private boolean intersectsWall(int x1, int y1, int x2, int y2, Set<Line2D> walls) {
+		Point2D p1 = new Point2D.Double(x1, y1);
+		Point2D p2 = new Point2D.Double(x2, y2);
+		Line2D l = new Line2D.Double(p1, p2);
+		for (Line2D w : walls) {
+			if(w.intersectsLine(l))
+				return true;
+		}
+		return false;
+	}
+
+
 	public AreaMap generateAreaMap(int[][] board, Set<Line2D> walls) {
 		AreaMap cleanMap = new AreaMap(100,100);
 		for(int i = 0; i < board.length; i++) {
@@ -209,7 +209,6 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		        }
 		    }
 		}
-		
 		return cleanMap;
 	}
 	
@@ -288,18 +287,18 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		  if (lineIsVertical) {
 		    //for vertical lines, assume that points to the left are lesser and points to the right are greater
 				if (x < line.getX1()) return 0;
-	    else return 1;
+				else return 1;
 		} else {
-	    //find the slope and intercept of the line given
-	    double slope = (line.getY2()-line.getY1()) / (line.getX2()-line.getX1());
-	    double yIntercept = line.getY1() - (slope*line.getX1());
-	    //identify if point is above or below line
-	    if (y > slope * x + yIntercept) return 1;
-	    else return 0;
+		    //find the slope and intercept of the line given
+		    double slope = (line.getY2()-line.getY1()) / (line.getX2()-line.getX1());
+		    double yIntercept = line.getY1() - (slope*line.getX1());
+		    //identify if point is above or below line
+		    if (y > slope * x + yIntercept) return 1;
+		    else return 0;
 		}
 	}
 	
-	void identifySections(int[][][] pointLineRelationships) {
+	public void identifySections(int[][][] pointLineRelationships) {
 		numberOfSections=0;
 		for (int x=0; x<100; x++) {
 			for (int y=0; y<100; y++) {
@@ -322,7 +321,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		      } 
 		    } 
 		    if (!hasComboBeenSeen) {
-		        Section newSection = new Section();
+		        Section newSection = new Section(walls.size());
 		        newSection.boolCombo=pointLineRelationships[x][y];
 		        newSection.xPoints.add(x);
 		        newSection.yPoints.add(y);
@@ -337,11 +336,11 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		}
 	}
 	
-	void findOptimalRoute(int[][] board) {
+	int[] findOptimalRoute(int[][] board, int numberOfSections, ArrayList<Section> sections) {
 		/* initialize a weighted graph, where each node 
 		is a midpoint and the weights represent the actual distances between them, taking obstacles into account */
-		midpointGraph = new WeightedGraph(numberOfSections); 
-		orderedSections = new int[numberOfSections];
+		WeightedGraph midpointGraph = new WeightedGraph(numberOfSections); 
+		int[] orderedSections = new int[numberOfSections];
 		
 		// initializing AStar
 		FHeuristic fh = new FHeuristic();
@@ -391,6 +390,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 			} 
 		}
 		orderedSections = Prims.prim(midpointGraph, 0);
+		return orderedSections;
 	}
 }
 

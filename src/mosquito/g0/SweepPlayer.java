@@ -41,13 +41,6 @@ public class SweepPlayer extends mosquito.sim.Player {
     }
 
     private int numLights;
-    private int currLight;
-    private int spirals;
-    private int currSpiral;
-    private int currSide;
-    private int stayCount;
-    
-    private final static int GAPSIZE = 13;
     
     private Light[] allLights;
     private Point2D.Double lastLight;
@@ -59,59 +52,8 @@ public class SweepPlayer extends mosquito.sim.Player {
         return "bears";
     }
     
-    /*
-     * WIP
-     */
-    private LinkedList<Section> createSections(Set<Line2D> input) {
-        
-        LinkedList<Section> sections = new LinkedList<Section>();
-        Iterator<Line2D> walls = input.iterator();
-        Line2D wall;
-        while(walls.hasNext()) {
-            wall = walls.next();
-            walls.remove();
-        }
-        
-        return null;
-    }
-    
-    /*
-     * WIP
-     */
-    private Point2D.Double intersects(Line2D line, ArrayList<Section> allSections) {
-        return null;
-    }
-    
     private Point2D.Double getMidpoint(Line2D line) {
         return new Point2D.Double((line.getX1() + line.getX2()) / 2, (line.getY1() + line.getY2()) / 2);
-    }
-    
-    private Line2D.Double extendLine(Line2D line) {
-        double x1 = line.getX1();
-        double x2 = line.getX2();
-        double y1 = line.getY1();
-        double y2 = line.getY2();
-        
-        double ydiff = y2 - y1;
-        double xdiff = x2 - x1;
-        double m = ydiff / xdiff;
-        double yIntercept = y1 - m*x1;
-        double y100Intercept = yIntercept + m*100;
-        double xIntercept = -yIntercept / m;
-        double x100Intercept = (100 - yIntercept) / m;
-        
-        boolean intersectsX0 = yIntercept >= 0 && yIntercept <= 100;
-        boolean intersectsX100 = y100Intercept >= 0 && y100Intercept <= 100;
-        double newX1 = (intersectsX0) ? 0 : xIntercept;
-        double newY1 = (intersectsX0) ? yIntercept : 0;
-        double newX2 = (intersectsX100) ? 100 : x100Intercept;
-        double newY2 = (intersectsX100) ? y100Intercept : 100;
-        
-        Point2D newPoint1 = new Point2D.Double(newX1, newY1);
-        Point2D newPoint2 = new Point2D.Double(newX2, newY2);
-        
-        return new Line2D.Double(newPoint1, newPoint2);
-        
     }
     
     private Set<Light> lights;
@@ -156,46 +98,42 @@ public class SweepPlayer extends mosquito.sim.Player {
         numLightsToSpacingMap.put(4, 22);
         numLightsToSpacingMap.put(3, 33);
         numLightsToSpacingMap.put(1, 22);
-//        // creating game borders
-//        Point2D.Double uR = new Point2D.Double(0, 100.0);
-//        Point2D.Double uL = new Point2D.Double(0, 0);
-//        Point2D.Double lL = new Point2D.Double(0, 100.0);
-//        Point2D.Double lR = new Point2D.Double(100.0, 100.0);
-//        
-//        Line2D l = new Line2D.Double(uL, lL);
-//        Line2D r = new Line2D.Double(uR, lR);
-//        Line2D u = new Line2D.Double(uL, uR);
-//        Line2D d = new Line2D.Double(lL, lR);
-//        
-//        Section boundary = new Section(l, r, u, d);
-//        ArrayList<Double> sortedVerticalLines = new ArrayList<Double>();
-//        boardSections.add(boundary);
-//        
-//        for (Line2D w : walls) {
-//            double x1 = w.getX1();
-//            double x2 = w.getX2();
-//            double y1 = w.getY1();
-//            double y2 = w.getY2();
-//            
-//            // dealing with vertical lines first
-//            if (w.getX1() == w.getX2()) {
-//                verticalLines.add(new Line2D.Double(new Point2D.Double(x1, 0), new Point2D.Double(x1, 100)));
-//                sortedVerticalLines.add(w.getX1());
-//                continue;
-//            }
-//            
-//            Point2D.Double mid = this.getMidpoint(w);
-//            midpoints.add(mid);
-//            
-//            Line2D ext = this.extendLine(w);
-//            extendedLines.add(ext);
-//            lines.add(ext);
-//        }
-//        
-//        // subdivide by vertical sections
-//        for(int i = 0; i < verticalLines.size(); i++) {
-//            // need to segment by vertical section...
-//        }
+        // creating game borders
+        Point2D.Double uR = new Point2D.Double(0, 100.0);
+        Point2D.Double uL = new Point2D.Double(0, 0);
+        Point2D.Double lL = new Point2D.Double(0, 100.0);
+        Point2D.Double lR = new Point2D.Double(100.0, 100.0);
+        
+        Line2D l = new Line2D.Double(uL, lL);
+        Line2D r = new Line2D.Double(uR, lR);
+        Line2D u = new Line2D.Double(uL, uR);
+        Line2D d = new Line2D.Double(lL, lR);
+        
+        Section boundary = new Section(l, r, u, d);
+        ArrayList<Double> sortedVerticalLines = new ArrayList<Double>();
+        boardSections.add(boundary);
+        
+        for (Line2D w : walls) {
+            double x1 = w.getX1();
+            double x2 = w.getX2();
+            double y1 = w.getY1();
+            double y2 = w.getY2();
+            
+            // dealing with vertical lines first
+            if (w.getX1() == w.getX2()) {
+                verticalLines.add(new Line2D.Double(new Point2D.Double(x1, 0), new Point2D.Double(x1, 100)));
+                sortedVerticalLines.add(w.getX1());
+                continue;
+            }
+            
+            Point2D.Double mid = this.getMidpoint(w);
+            midpoints.add(mid);
+        }
+        
+        // subdivide by vertical sections
+        for(int i = 0; i < verticalLines.size(); i++) {
+            // need to segment by vertical section...
+        }
         
         return lines;
     }
@@ -234,18 +172,8 @@ public class SweepPlayer extends mosquito.sim.Player {
             y += numLightsToSpacingMap.get(numLights);
             MoveableLight l = new MoveableLight(lastLight.getX(), lastLight.getY(), true);
 
-//          MoveableLight l = new MoveableLight(lastLight.getX()+a*10, lastLight.getY(), true);
-
-//          l.turnOff();
             lights.add(l);
             
-            log.error("current iteration is " + a);
-            
-//          astar.calcShortestPath((int)l.getX(), (int) l.getY(), 99, (int) lastLight.getY());
-            
-            log.error("current iteration is " + a + " and we are done with calculating aStar");
-            
-//          l.shortestPath = astar.shortestPath;
             lightsToMovesMap.put(l, 0);
             mlights.add(l);
             movementMap.put(l, false);
@@ -261,17 +189,7 @@ public class SweepPlayer extends mosquito.sim.Player {
      * The board tells you where the mosquitoes are: board[x][y] tells you the
      * number of mosquitoes at coordinate (x, y)
      */
-    
-    /*
-     *  private int spirals = 8;
-    private int currSpiral = 0;
-    private int currSide = 0;
-    private int sidesOfSpiral = 3;
-    private int currLight = 0
-    private Light[] allLights = array of lights;
-     */
     public Set<Light> updateLights(int[][] board) {
-        int timesMoved = 0;
         for(MoveableLight ml: mlights) {
             if(ml.getX() == 97 && ml.getY() == 50) {
                 if(ml.numMovesAtCollector >= 15) {
@@ -313,7 +231,6 @@ public class SweepPlayer extends mosquito.sim.Player {
                         log.error("Moving to x = "+ml.shortestPath.getX(0));
                         log.error("Moving to y = "+ml.shortestPath.getY(0));
                         ml.moveTo(ml.shortestPath.getX(0), ml.shortestPath.getY(0));
-                        timesMoved++;
                         lightsToMovesMap.put(ml, 1);
                     }
                     continue;
@@ -348,7 +265,6 @@ public class SweepPlayer extends mosquito.sim.Player {
                         movementMap.put(ml, false);
                         lightsToMovesMap.put(ml, 0);
                         ml.moveRight();
-                        timesMoved++;
                         hasMovedThisTurn = true;
                     }
                 }
@@ -381,7 +297,6 @@ public class SweepPlayer extends mosquito.sim.Player {
                                 log.error("Moving to x = "+ml.shortestPath.getX(0));
                                 log.error("Moving to y = "+ml.shortestPath.getY(0));
                                 ml.moveTo(ml.shortestPath.getX(0), ml.shortestPath.getY(0));
-                                timesMoved++;
                                 lightsToMovesMap.put(ml, 1);
                             }
                         }
@@ -390,7 +305,6 @@ public class SweepPlayer extends mosquito.sim.Player {
                         log.error("3" + ml);
                         if(!hasMovedThisTurn) {
                             ml.moveRight();
-                            timesMoved++;
                             hasMovedThisTurn = true;
                         }
                     }
@@ -400,7 +314,6 @@ public class SweepPlayer extends mosquito.sim.Player {
                         log.error("2");
                         if(!hasMovedThisTurn) {
                             ml.moveRight();
-                            timesMoved++;
                             hasMovedThisTurn = true;
                         }
                     }
@@ -408,7 +321,6 @@ public class SweepPlayer extends mosquito.sim.Player {
                         log.error("1");
                         if(!hasMovedThisTurn) {
                             ml.moveRight();
-                            timesMoved++;
                             lightsToMovesMap.put(ml, 0);
                             movementMap.put(ml, false);
                             hasMovedThisTurn = true;
@@ -422,7 +334,6 @@ public class SweepPlayer extends mosquito.sim.Player {
                             ml.moveTo(ml.shortestPath.getX(moveNum), ml.shortestPath.getY(moveNum));
                             log.error(ml +"   distance: x = "+(ml.shortestPath.getX(moveNum) - ml.getX())+" y = "+(ml.shortestPath.getY(moveNum) - ml.getY())); //Log the distance between the current position and the next position.
                             moveNum++;
-                            timesMoved++;
                             lightsToMovesMap.put(ml, moveNum);
                             hasMovedThisTurn = true;
                         }
@@ -430,20 +341,6 @@ public class SweepPlayer extends mosquito.sim.Player {
                 }
             }
             else {
-//                if(ml.getX() == 97 && ml.getY() == 50 ) {
-//                    log.error("THIS HAPPENED WOW "+ml.numMovesAtCollector2);
-//                    if(ml.numMovesAtCollector2 >= 20) {
-//                        log.error("CHECK");
-//                        ml.hasReachedRightSide = true;
-//                        movementMap.put(ml, false);
-//                        lightsToMovesMap.put(ml, 0);
-//                    }
-//                    else {
-//                        log.error("CHECK2");
-//                        ml.numMovesAtCollector2++;
-//                        continue;
-//                    }
-//                }
                 if(!movementMap.get(ml)) {
                     List<Point2D.Double> mosquitoLocations = getMosquitoLocationsByDistance(board, ml);
                     if(!mosquitoLocations.isEmpty()) {
@@ -473,7 +370,6 @@ public class SweepPlayer extends mosquito.sim.Player {
                             log.error("Moving to x = "+ml.shortestPath.getX(0));
                             log.error("Moving to y = "+ml.shortestPath.getY(0));
                             ml.moveTo(ml.shortestPath.getX(0), ml.shortestPath.getY(0));
-                            timesMoved++;
                             lightsToMovesMap.put(ml, 1);
                         }
                     }
@@ -509,7 +405,6 @@ public class SweepPlayer extends mosquito.sim.Player {
                         log.error("Moving to x = "+ml.shortestPath.getX(0));
                         log.error("Moving to y = "+ml.shortestPath.getY(0));
                         ml.moveTo(ml.shortestPath.getX(0), ml.shortestPath.getY(0));
-                        timesMoved++;
                         lightsToMovesMap.put(ml, 1);
                     }
                     continue;
@@ -521,7 +416,6 @@ public class SweepPlayer extends mosquito.sim.Player {
                     ml.moveTo(ml.shortestPath.getX(moveNum), ml.shortestPath.getY(moveNum));
                     log.error(ml +"   distance: x = "+(ml.shortestPath.getX(moveNum) - ml.getX())+" y = "+(ml.shortestPath.getY(moveNum) - ml.getY())); //Log the distance between the current position and the next position.
                     moveNum++;
-                    timesMoved++;
                     lightsToMovesMap.put(ml, moveNum);
                 }
             }
