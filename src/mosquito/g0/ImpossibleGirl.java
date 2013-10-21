@@ -165,7 +165,8 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		this.orderedSections = findOptimalRoute(board, numberOfSections, sections);
 	    
 	    for (int i=0; i<numberOfSections; i++) {
-	    	log.error("The " + i + "th point to visit is: " + orderedSections[i]);
+	    	log.error("The " + i + "th point to visit is: (" + sections.get(orderedSections[i]).midX + " , " +
+	    			sections.get(orderedSections[i]).midY + ").");
 	    }
 
 		
@@ -534,7 +535,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 				} else midpointGraph.addEdge(i,j,astar.shortestPath.getLength());
 			} 
 		}
-		midpointGraph.print();
+		//midpointGraph.print();
 		orderedSections = TPrim.Prim(midpointGraph);
 		return orderedSections;
 	}
