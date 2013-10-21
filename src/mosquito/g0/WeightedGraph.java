@@ -3,21 +3,16 @@ package mosquito.g0;
 import org.apache.log4j.Logger;
 
 public class WeightedGraph {
-  
-     private int [][]  edges;  // adjacency matrix
-     private Object [] labels;
+	
+     public int [][]  edges;  // adjacency matrix
  	 private Logger log = Logger.getLogger(this.getClass()); // for logging
  	
      public WeightedGraph (int n) {
         edges  = new int [n][n];
-        labels = new Object[n];
      }
   
   
-     public int size() { return labels.length; }
-  
-     public void   setLabel (int vertex, Object label) { labels[vertex]=label; }
-     public Object getLabel (int vertex)               { return labels[vertex]; }
+     public int size() { return edges.length; }
   
      public void    addEdge    (int source, int target, int w)  { 
 //    	 log.error("adding edge: (" + source + "," + target + ") with weight: " + w);
@@ -41,11 +36,11 @@ public class WeightedGraph {
   
      public void print () {
         for (int j=0; j<edges.length; j++) {
-           System.out.print (labels[j]+": ");
-           for (int i=0; i<edges[j].length; i++) {
-              if (edges[j][i]>0) System.out.print (labels[i]+":"+edges[j][i]+" ");
-           }
-           System.out.println ();
+        	String output = "";
+        	for (int i=0; i<edges.length; i++) {
+        		output = output + " , " + edges[i][j];
+        	}
+           log.error(output);
         }
      }
   }

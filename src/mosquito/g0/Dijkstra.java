@@ -1,11 +1,12 @@
 package mosquito.g0;
-public class Prims {
+
+public class Dijkstra {
   
-     // Prim-Jarník's algorithm to find MST rooted at s
-     public static int [] prim (WeightedGraph G, int s) {
-        final int [] dist = new int [G.size()];  // shortest known distance to MST
-        final int [] pred = new int [G.size()];  // preceeding node in tree
-        final boolean [] visited = new boolean [G.size()]; // all false initially
+     // Dijkstra's algorithm to find shortest path from s to all other nodes
+     public static int [] dijkstra (WeightedGraph G, int s) {
+        final int [] dist = new int [G.size()];  // shortest known distance om "s"
+        final int [] pred = new int [G.size()];  // preceeding node in path
+        final boolean [] visited = new boolean [G.size()]; // all false itially
   
         for (int i=0; i<dist.length; i++) {
            dist[i] = Integer.MAX_VALUE;
@@ -16,12 +17,12 @@ public class Prims {
            final int next = minVertex (dist, visited);
            visited[next] = true;
   
-           // The edge from pred[next] to next is in the MST (if next!=s)
+           // The shortest path to next is dist[next] and via pred[next].
   
            final int [] n = G.neighbors (next);
            for (int j=0; j<n.length; j++) {
               final int v = n[j];
-              final int d = G.getWeight(next,v);
+              final int d = dist[next] + G.getWeight(next,v);
               if (dist[v] > d) {
                  dist[v] = d;
                  pred[v] = next;
@@ -39,4 +40,16 @@ public class Prims {
         }
         return y;
      }
-  }
+  
+     public static void printPath (WeightedGraph G, int [] pred, int s, int e) {
+        final java.util.ArrayList path = new java.util.ArrayList();
+        int x = e;
+        while (x!=s) {
+           path.add (0, "butts");
+           x = pred[x];
+        }
+        path.add (0, "butts");
+        System.out.println (path);
+     }
+  
+}

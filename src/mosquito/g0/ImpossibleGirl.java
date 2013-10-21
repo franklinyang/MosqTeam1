@@ -1,16 +1,13 @@
 package mosquito.g0;
 
-import java.awt.Color;
-import java.awt.Graphics;
 import java.awt.geom.Line2D;
+
 import java.awt.geom.Point2D;
-import java.awt.geom.Line2D.Double;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
+import java.util.PriorityQueue;
 
 import org.apache.log4j.Logger;
 
@@ -30,10 +27,9 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 	// general instance variables relevant to our problem
 	private Set<Light> lights;
 	private Set<Line2D> walls;
-	private int collectorX;
-	private int collectorY;
-	private int numLights;
 	private Logger log = Logger.getLogger(this.getClass()); // for logging
+	
+	private int collectorX, collectorY, numLights;
 	
 	// related to lights
 	private ArrayList<MoveableLight> mlights;
@@ -48,7 +44,6 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 //	ArrayList<Section> prunedSections;
 	
 	// related to prims
-	private WeightedGraph midpointGraph;
 	private int[] orderedSections;
 	
 	/*
@@ -62,6 +57,58 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 	 */
 	@Override
 	public ArrayList<Line2D> startNewGame(Set<Line2D> walls, int numLights) {
+		/********* TEST SUITE*************/
+		/*
+		WeightedGraph testGraph = new WeightedGraph(6); 
+		int[] testResult = new int[numberOfSections];
+		
+//		testGraph.addEdge(0, 1, 34);
+//		testGraph.addEdge(1, 0, 34);
+//		testGraph.addEdge(0, 2, 1);
+//		testGraph.addEdge(2, 0, 1);
+//		testGraph.addEdge(0, 3, 5);
+//		testGraph.addEdge(3, 0, 5);
+//		testGraph.addEdge(1, 2, 4);
+//		testGraph.addEdge(2, 1, 4);
+//		testGraph.addEdge(1, 3, 66);
+//		testGraph.addEdge(3, 1, 66);
+//		testGraph.addEdge(2, 3, 34);
+//		testGraph.addEdge(3, 2, 34);
+//		testGraph.addEdge(0, 0, 99);
+//		testGraph.addEdge(1, 1, 99);
+//		testGraph.addEdge(2, 2, 99);
+//		testGraph.addEdge(3, 3, 99);
+//		testGraph.print();
+
+        testGraph.addEdge (0,1,2);
+        testGraph.addEdge (0,5,9);
+        testGraph.addEdge (1,2,8);
+        testGraph.addEdge (1,3,15);
+        testGraph.addEdge (1,5,6);
+        testGraph.addEdge (2,3,1);
+        testGraph.addEdge (4,3,3);
+        testGraph.addEdge (4,2,7);
+        testGraph.addEdge (5,4,3);
+		log.error("Neighbor of 0: "+Arrays.toString(testGraph.neighbors(0)));
+		log.error("Neighbor of 1: "+Arrays.toString(testGraph.neighbors(1)));
+		log.error("Neighbor of 2: "+Arrays.toString(testGraph.neighbors(2)));
+		log.error("Neighbor of 3: "+Arrays.toString(testGraph.neighbors(3)));
+		log.error("Neighbor of 4: "+Arrays.toString(testGraph.neighbors(4)));
+		log.error("Neighbor of 5: "+Arrays.toString(testGraph.neighbors(5)));
+		testResult = TPrim.Prim(testGraph);
+//		testResult = Prims.prim(testGraph, 0);
+		//testResult = Dijkstra.dijkstra(testGraph, 0);
+//		testResult = PrimMinimumSpanningTree.mininumSpanningTree(testGraph.edges);
+//		
+	    for (int i=0; i<6; i++) {
+	    	log.error("The " + -i + "th point to visit is: " + testResult[i]);
+	    }*/
+		/**************END TEST***********/
+		
+		
+		
+		
+		
 		this.numLights = numLights;
 		this.walls = walls;
 		pointLineRelationships = new int[100][100][walls.size()];
@@ -114,12 +161,10 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		mlights = new ArrayList<MoveableLight>();
 		
 		this.orderedSections = findOptimalRoute(board, numberOfSections, sections);
-//		for(int i : orderedSections)
-//			log.error(i);
 	    
-//	    for (int i=0; i<numberOfSections; i++) {
-//	    	log.error("The " + i + "th point to visit is: " + orderedSections[i]);
-//	    }
+	    for (int i=0; i<numberOfSections; i++) {
+	    	log.error("The " + i + "th point to visit is: " + orderedSections[i]);
+	    }
 		
 		// initially position each of the nights
 		for (int i = 0; i < numLights; i++) {
@@ -351,56 +396,37 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		/* initialize a weighted graph, where each node 
 		is a midpoint and the weights represent the actual distances between them, taking obstacles into account */
 		WeightedGraph midpointGraph = new WeightedGraph(numberOfSections); 
-		int[] orderedSections = new int[numberOfSections];
+		//PriorityQueue midpointQueue = new PriorityQueue<int, int>
+		orderedSections = new int[numberOfSections];
 		
-		// initializing AStar
+		
 		FHeuristic fh = new FHeuristic();
-		AreaMap cleanMap = new AreaMap(100,100);
-	    for(int i = 0; i < board.length; i++) {
-	        for(int j = 0; j < board[0].length; j++) {
-	            for(Line2D wall: walls) {
-	                if(wall.ptSegDist(i, j) < 2.0) {
-	                	cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
-	                }
-	            }
-	        }
-	    }
-		astar = new AStar(cleanMap, fh);
 		
+		//For each section, 
 		for (int i=0; i<numberOfSections; i++) {
-			cleanMap = new AreaMap(100,100);
+			//log.error("Segment "+i+" is at: ("+sections.get(i).midX+" , "+sections.get(i).midY+" ).");
+			AreaMap cleanMap = new AreaMap(100,100);
 		    for(int k = 0; k < board.length; k++) {
 		        for(int l = 0; l < board[0].length; l++) {
 		            for(Line2D wall: walls) {
-		                if(wall.ptSegDist(k, l) < 2.0) {
-		                	cleanMap.getNodes().get(k).get(l).isObstacle = true; // nay on the current node
-		                }
+		                if(wall.ptSegDist(k, l) < 2.0) cleanMap.getNodes().get(k).get(l).isObstacle = true; // nay on the current nodes
 		            }
 		        }
 		    }
+		    
 			astar = new AStar(cleanMap, fh);
-			for (int j=0; j<numberOfSections; j++) {
-				if (i==j) {
-					midpointGraph.addEdge(i,j,0); 
-					midpointGraph.setLabel(i, ("v" + j));
-				} else if (i>j) {
-					midpointGraph.addEdge(i, j, midpointGraph.getWeight(j, i));
-					midpointGraph.setLabel(i, ("v" + j));
-				} else {
-					//build an adjacency matrix with the distance between each midpoint
-					astar.calcShortestPath(sections.get(i).midX, sections.get(i).midY, sections.get(j).midX, sections.get(j).midY);
-					//log.error("line 311.  iX: " + sections.get(i).midX + " iY: " + sections.get(j).midY);
-					if (astar.shortestPath == null) {
-						//TODO: This is hacky
-						midpointGraph.addEdge(i,  j, 500);
-					} else {
-						midpointGraph.addEdge(i,j,astar.shortestPath.getLength());
-						midpointGraph.setLabel(i, ("v" + j));
-					}
-				}
+			for (int j=i+1; j<numberOfSections; j++) {
+				//build an adjacency matrix with the distance between each midpoint
+				astar.calcShortestPath(sections.get(i).midX, sections.get(i).midY, sections.get(j).midX, sections.get(j).midY);
+				//log.error("line 311.  iX: " + sections.get(i).midX + " iY: " + sections.get(j).midY);
+				if (astar.shortestPath == null) {
+					//TODO: This is hacky
+					midpointGraph.addEdge(i,  j, 10000);
+				} else midpointGraph.addEdge(i,j,astar.shortestPath.getLength());
 			} 
 		}
-		orderedSections = Prims.prim(midpointGraph, 0);
+		midpointGraph.print();
+		orderedSections = TPrim.Prim(midpointGraph);
 		return orderedSections;
 	}
 }
