@@ -127,7 +127,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 			sections.get(i).setMidpoints();
 		}
 				
-		sections = this.pruneSections(sections, walls);
+//		sections = this.pruneSections(sections, walls);
 		numberOfSections = sections.size();
 		
 		for (int i=0; i<numberOfSections; i++) {
@@ -371,7 +371,9 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 			Section s = sections.get(i);
 			x1 = s.midX;
 			y1 = s.midY;
-			for(int j = i+1; j < sections.size(); j++) {
+			for(int j = 0; j < sections.size(); j++) {
+				if(i == j)
+					continue;
 				Section st = sections.get(j);
 				x2 = st.midX;
 				y2 = st.midY;
