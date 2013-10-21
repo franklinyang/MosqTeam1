@@ -42,6 +42,7 @@ public class MoveableLight extends Light {
 		waypoints = new ArrayList<Point2D>();
 		shortestPaths = new ArrayList<Path>();
 		shortestPath = new Path();
+		currPath = new Path(); 
 	}
 	
 	private boolean isLightOn = true;
