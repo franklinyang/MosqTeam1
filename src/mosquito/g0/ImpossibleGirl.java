@@ -381,9 +381,17 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		for(int i = 0; i <= board.length; i++) {
 		    for(int j = 0; j <= board[0].length; j++) {
 		        for(Line2D wall: walls) {
-		            if(wall.ptSegDist(i, j) < 2.0) {
-		            	cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
+		        	int dist = (int)wall.ptSegDist(i,j);
+		        	if(dist == 0)
+		        		cleanMap.getNodes().get(i).get(j).isObstacle = true;
+		        	if(dist < 0.05)
+		        		cleanMap.getNodes().get(i).get(j).heuristicDistanceFromGoal = Integer.MAX_VALUE; // nay on the current node
+		        	else if(dist < 1) {
+		            	cleanMap.getNodes().get(i).get(j).heuristicDistanceFromGoal = 1000;
 		            }
+		        	else if(dist < 2) {
+		        		cleanMap.getNodes().get(i).get(j).heuristicDistanceFromGoal = 10000; // nay on the current node
+		        	}
 		        }
 		    }
 		}
