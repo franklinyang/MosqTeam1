@@ -36,5 +36,7 @@ public class Section {
 		  }
 		  this.midX = sumX/len;
 		  this.midY = sumY/len;
+//		  System.err.println(midX + ", " + midY);
+
 	  }
 }

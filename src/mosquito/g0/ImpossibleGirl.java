@@ -110,11 +110,6 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 	    	log.error("The " + -i + "th point to visit is: " + testResult[i]);
 	    }*/
 		/**************END TEST***********/
-		
-		
-		
-		
-		
 		this.numLights = numLights;
 		this.walls = walls;
 		pointLineRelationships = new int[100][100][walls.size()];
@@ -127,8 +122,8 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 			sections.get(i).setMidpoints();
 		}
 				
-//		sections = this.pruneSections(sections, walls);
-		numberOfSections = sections.size();
+		this.sections = this.pruneSections(this.sections, walls);
+		numberOfSections = this.sections.size();
 		
 		for (int i=0; i<numberOfSections; i++) {
 			
@@ -210,8 +205,9 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		
 		// for each light, make the last light the collector
 		for (int i = 0; i < numLights; i++) {
-			//assume that collector is at 50,50
 			mlights.get(i).waypoints.add(new Point2D.Double(getCollector().getX(), getCollector().getY()));
+			System.err.println(collectorX + ", " + collectorY);
+
 		}
 		
 		int len;
@@ -226,6 +222,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 				nextPoint = currLight.waypoints.get(j+1);
 				AreaMap cleanMap = generateAreaMap(board, walls);
 				astar = new AStar(cleanMap, fh);
+				log.error((int) currPoint.getX() + "," + (int) currPoint.getY() + " " + (int) nextPoint.getX() + "," + (int) nextPoint.getY());
 				astar.calcShortestPath((int)currPoint.getX(), (int)currPoint.getY(), (int)nextPoint.getX(), (int)nextPoint.getY());
 				currLight.shortestPaths.add(astar.shortestPath);
 			}
@@ -360,7 +357,17 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 	@Override
 	public Collector getCollector() {
 		// this one just places a collector next to the last light that was added
-		Collector c = new Collector(this.collectorX-1, this.collectorY-1);
+		int x = this.collectorX;
+		int y = this.collectorY;
+		Collector c;
+		if(x-1 < 0 && y-1 < 0)
+			c = new Collector(x+1, y+1);
+		else if(x-1 < 0)
+			c = new Collector(x, y-1);
+		else if(y-1 < 0)
+			c = new Collector(x-1, y);
+		else
+			c = new Collector(this.collectorX-1, this.collectorY-1);
 		return c;
 	}
 	
@@ -371,9 +378,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 			Section s = sections.get(i);
 			x1 = s.midX;
 			y1 = s.midY;
-			for(int j = 0; j < sections.size(); j++) {
-				if(i == j)
-					continue;
+			for(int j = i+1; j < sections.size(); j++) {
 				Section st = sections.get(j);
 				x2 = st.midX;
 				y2 = st.midY;
@@ -383,6 +388,8 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 				}
 			}
 		}
+		for(Section s : prunedSections)
+			  System.err.println(s.midX + ", " + s.midY);
 		log.error("Pruned Section size is: " + prunedSections.size());
 		return prunedSections;
 	}
@@ -516,14 +523,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		//For each section, 
 		for (int i=0; i<numberOfSections; i++) {
 			//log.error("Segment "+i+" is at: ("+sections.get(i).midX+" , "+sections.get(i).midY+" ).");
-			cleanMap = new AreaMap(100,100);
-		    for(int k = 0; k < board.length; k++) {
-		        for(int l = 0; l < board[0].length; l++) {
-		            for(Line2D wall: walls) {
-		                if(wall.ptSegDist(k, l) < 2.0) cleanMap.getNodes().get(k).get(l).isObstacle = true; // nay on the current nodes
-		            }
-		        }
-		    }
+			cleanMap = generateAreaMap(board,walls);
 		    
 			astar = new AStar(cleanMap, fh);
 			for (int j=i+1; j<numberOfSections; j++) {
