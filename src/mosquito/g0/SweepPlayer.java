@@ -41,13 +41,6 @@ public class SweepPlayer extends mosquito.sim.Player {
     }
 
     private int numLights;
-    private int currLight;
-    private int spirals;
-    private int currSpiral;
-    private int currSide;
-    private int stayCount;
-    
-    private final static int GAPSIZE = 13;
     
     private Light[] allLights;
     private Point2D.Double lastLight;
@@ -59,59 +52,8 @@ public class SweepPlayer extends mosquito.sim.Player {
         return "bears";
     }
     
-    /*
-     * WIP
-     */
-    private LinkedList<Section> createSections(Set<Line2D> input) {
-        
-        LinkedList<Section> sections = new LinkedList<Section>();
-        Iterator<Line2D> walls = input.iterator();
-        Line2D wall;
-        while(walls.hasNext()) {
-            wall = walls.next();
-            walls.remove();
-        }
-        
-        return null;
-    }
-    
-    /*
-     * WIP
-     */
-    private Point2D.Double intersects(Line2D line, ArrayList<Section> allSections) {
-        return null;
-    }
-    
     private Point2D.Double getMidpoint(Line2D line) {
         return new Point2D.Double((line.getX1() + line.getX2()) / 2, (line.getY1() + line.getY2()) / 2);
-    }
-    
-    private Line2D.Double extendLine(Line2D line) {
-        double x1 = line.getX1();
-        double x2 = line.getX2();
-        double y1 = line.getY1();
-        double y2 = line.getY2();
-        
-        double ydiff = y2 - y1;
-        double xdiff = x2 - x1;
-        double m = ydiff / xdiff;
-        double yIntercept = y1 - m*x1;
-        double y100Intercept = yIntercept + m*100;
-        double xIntercept = -yIntercept / m;
-        double x100Intercept = (100 - yIntercept) / m;
-        
-        boolean intersectsX0 = yIntercept >= 0 && yIntercept <= 100;
-        boolean intersectsX100 = y100Intercept >= 0 && y100Intercept <= 100;
-        double newX1 = (intersectsX0) ? 0 : xIntercept;
-        double newY1 = (intersectsX0) ? yIntercept : 0;
-        double newX2 = (intersectsX100) ? 100 : x100Intercept;
-        double newY2 = (intersectsX100) ? y100Intercept : 100;
-        
-        Point2D newPoint1 = new Point2D.Double(newX1, newY1);
-        Point2D newPoint2 = new Point2D.Double(newX2, newY2);
-        
-        return new Line2D.Double(newPoint1, newPoint2);
-        
     }
     
     private Set<Light> lights;
@@ -186,10 +128,6 @@ public class SweepPlayer extends mosquito.sim.Player {
             
             Point2D.Double mid = this.getMidpoint(w);
             midpoints.add(mid);
-            
-            Line2D ext = this.extendLine(w);
-            extendedLines.add(ext);
-            lines.add(ext);
         }
         
         // subdivide by vertical sections
@@ -219,7 +157,7 @@ public class SweepPlayer extends mosquito.sim.Player {
         mlights = new HashSet<MoveableLight>();
         for(int a = 0; a<numLights; a++)
         {
-            AreaMap cleanMap = new AreaMap(100,100);
+            AreaMap cleanMap = new AreaMap(101,101);
             for(int i = 0; i < board.length; i++) {
                 for(int j = 0; j < board[0].length; j++) {
                     for(Line2D wall: walls) {
@@ -234,18 +172,8 @@ public class SweepPlayer extends mosquito.sim.Player {
             y += numLightsToSpacingMap.get(numLights);
             MoveableLight l = new MoveableLight(lastLight.getX(), lastLight.getY(), true);
 
-//          MoveableLight l = new MoveableLight(lastLight.getX()+a*10, lastLight.getY(), true);
-
-//          l.turnOff();
             lights.add(l);
             
-            log.error("current iteration is " + a);
-            
-//          astar.calcShortestPath((int)l.getX(), (int) l.getY(), 99, (int) lastLight.getY());
-            
-            log.error("current iteration is " + a + " and we are done with calculating aStar");
-            
-//          l.shortestPath = astar.shortestPath;
             lightsToMovesMap.put(l, 0);
             mlights.add(l);
             movementMap.put(l, false);
@@ -261,40 +189,27 @@ public class SweepPlayer extends mosquito.sim.Player {
      * The board tells you where the mosquitoes are: board[x][y] tells you the
      * number of mosquitoes at coordinate (x, y)
      */
-    
-    /*
-     *  private int spirals = 8;
-    private int currSpiral = 0;
-    private int currSide = 0;
-    private int sidesOfSpiral = 3;
-    private int currLight = 0
-    private Light[] allLights = array of lights;
-     */
     public Set<Light> updateLights(int[][] board) {
-        int timesMoved = 0;
         for(MoveableLight ml: mlights) {
-            if(ml.getX() == 97 && ml.getY() == 50) {
-                if(ml.numMovesAtCollector >= 15) {
-                    ml.hasReachedRightSide = true;
-                    movementMap.put(ml, false);
-                    lightsToMovesMap.put(ml, 0);
+            if(ml.getX() == 97 && ml.getY() == 50) { //If you've reached the collector, stay there for 15 moves
+                if(ml.numMovesAtCollector >= 15) { //If you've stayed at the collector for 15 moves then time to move on
+                    ml.hasFinishedPhaseOne = true;
+                    movementMap.put(ml, false); //This is a hashmap that tells us whether each light is currently on an A* path
+                    lightsToMovesMap.put(ml, 0); //This hashmap tells us what move number is the current light in, in its A* path
                 }
                 else {
-                    ml.numMovesAtCollector++;
+                    ml.numMovesAtCollector++; //If you haven't stayed for 15 moves yet, stay put and increement your movesAtCollector
                     continue;
                 }
             }
-            if(!ml.hasReachedRightSide) {
-                if(ml.getX() == 97 && !movementMap.get(ml)) {
+            if(!ml.hasFinishedPhaseOne) { //If we are still sweeping from left to right (i.e Phase 1 of the strategy)
+                if(ml.getX() == 97 && !movementMap.get(ml)) { //If we've reached the right side of the board after sweeping from left to right AND we aren't on an A* path as it is
                     log.error("REACHED THE OTHER SIDE !!!!!!!!");
-                    AreaMap cleanMap = new AreaMap(100,100);
-                    for(int i = 0; i < board.length; i++) {
-                        for(int j = 0; j < board[0].length; j++) {
+                    AreaMap cleanMap = new AreaMap(101,101);
+                    for(int i = 0; i <= board.length; i++) {
+                        for(int j = 0; j <= board[0].length; j++) {
                             for(Line2D wall: walls) {
-                                if(wall.ptSegDist(i, j) < 2.0) {
-                                    if(i==99 && j==50) {
-                                        log.error("REMOVE IMPORTANT NODE!!!");
-                                    }
+                                if(wall.ptSegDist(i, j) < 2.0) { //Create our A* graph by marking something as an obstacle if it's within 2 units of distance
                                     cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
                                 }
                             }
@@ -302,7 +217,7 @@ public class SweepPlayer extends mosquito.sim.Player {
                     }
                     FHeuristic fh = new FHeuristic();
                     astar = new AStar(cleanMap, fh);
-                    astar.calcShortestPath((int)ml.getX(), (int) ml.getY(), 97, 50);
+                    astar.calcShortestPath((int)ml.getX(), (int) ml.getY(), 97, 50); //Compute the A* path from here to the collector
                     ml.currDestinationX = 97;
                     ml.currDestinationY = 50;
                     ml.shortestPath = astar.shortestPath;
@@ -312,24 +227,23 @@ public class SweepPlayer extends mosquito.sim.Player {
                     if(ml.shortestPath != null) {
                         log.error("Moving to x = "+ml.shortestPath.getX(0));
                         log.error("Moving to y = "+ml.shortestPath.getY(0));
-                        ml.moveTo(ml.shortestPath.getX(0), ml.shortestPath.getY(0));
-                        timesMoved++;
+                        ml.moveTo(ml.shortestPath.getX(0), ml.shortestPath.getY(0)); //Move once in the A* path to initiate the A* movement sequence
                         lightsToMovesMap.put(ml, 1);
                     }
                     continue;
                 }
-                if(ml.hasStoppedAtCorner) {
+                if(ml.hasStoppedAtCorner) { //Code to ensure that we only stop at a corner once to wait for mosquitos to catch up
                     ml.numMovesSinceStopped++;
                     if(ml.numMovesSinceStopped == 25) {
                         ml.numMovesSinceStopped = 0;
                         ml.hasStoppedAtCorner = false;
                     }
                 }
-                boolean hasMovedThisTurn = false; //Boolean variable to ensure that a light can only enter a crticial code section, i.e where movement occurs, once.
-                if(ml.numMovesSinceStopped == 0) {
+                boolean hasMovedThisTurn = false; //Boolean variable to ensure that a light can only enter a critical code section, i.e where movement occurs, once.
+                if(ml.numMovesSinceStopped == 0) { //Check to see if we need to stop at a corner assuming we haven't seen a corner in the last 25 moves
                     for(Line2D obstacle: walls) {
-                        if(!ml.hasStoppedAtCorner && (obstacle.getP1().distance(ml.getLocation()) < 4 || obstacle.getP2().distance(ml.getLocation()) < 4)) {
-                            if(ml.numTurnsAtCorner >= 10) {
+                        if(!ml.hasStoppedAtCorner && (obstacle.getP1().distance(ml.getLocation()) < 3 || obstacle.getP2().distance(ml.getLocation()) < 3)) {
+                            if(ml.numTurnsAtCorner >= 10) { //Wait for obstacle for 10 moves
                                 ml.numTurnsAtCorner = 0;
                                 ml.hasStoppedAtCorner = true;
                                 ml.numMovesSinceStopped = 1;
@@ -342,25 +256,24 @@ public class SweepPlayer extends mosquito.sim.Player {
                         }
                     }
                 }
-                if(ml.getX() == ml.currDestinationX && ml.getY() == ml.currDestinationY) { //If the light has reached its A* destination
+                if(ml.getX() == ml.currDestinationX && ml.getY() == ml.currDestinationY) { //If the light has reached its A* destination in our left to right sweep
                     log.error("4");
                     if(!hasMovedThisTurn) {
                         movementMap.put(ml, false);
                         lightsToMovesMap.put(ml, 0);
                         ml.moveRight();
-                        timesMoved++;
                         hasMovedThisTurn = true;
                     }
                 }
                 else if(!movementMap.get(ml)) { // If the light isn't currently moving on an A* path
                     boolean hasHitWall = false;
-                    for(Line2D obstacle: walls) {
+                    for(Line2D obstacle: walls) { //Check for obstacles and see if we are near an obstacle
                         if(obstacle.ptSegDistSq(ml.getX(), ml.getY()) <= 4.0) { //We've detected an obstacle 
                             log.error("ENTERED BAD AREA!!! : "+ml);
                             hasHitWall = true;
-                            AreaMap cleanMap = new AreaMap(100,100);
-                            for(int i = 0; i < board.length; i++) {
-                                for(int j = 0; j < board[0].length; j++) {
+                            AreaMap cleanMap = new AreaMap(101,101);
+                            for(int i = 0; i <= board.length; i++) {
+                                for(int j = 0; j <= board[0].length; j++) {
                                     for(Line2D wall: walls) {
                                         if(wall.ptSegDist(i, j) < 2.0) {
                                             cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
@@ -370,7 +283,7 @@ public class SweepPlayer extends mosquito.sim.Player {
                             }
                             FHeuristic fh = new FHeuristic();
                             astar = new AStar(cleanMap, fh);
-                            astar.calcShortestPath((int)ml.getX(), (int) ml.getY(), (int)ml.getX()+6, (int) ml.getY());
+                            astar.calcShortestPath((int)ml.getX(), (int) ml.getY(), (int)ml.getX()+6, (int) ml.getY()); //Since we've seen an obstacle we need to move the point 6 units to the right
                             ml.currDestinationX = ml.getX() + 6;
                             ml.currDestinationY = ml.getY();
                             ml.shortestPath = astar.shortestPath;
@@ -381,40 +294,36 @@ public class SweepPlayer extends mosquito.sim.Player {
                                 log.error("Moving to x = "+ml.shortestPath.getX(0));
                                 log.error("Moving to y = "+ml.shortestPath.getY(0));
                                 ml.moveTo(ml.shortestPath.getX(0), ml.shortestPath.getY(0));
-                                timesMoved++;
                                 lightsToMovesMap.put(ml, 1);
                             }
                         }
                     }
-                    if(!hasHitWall) {
+                    if(!hasHitWall) { //If there were no obstacles just move right
                         log.error("3" + ml);
                         if(!hasMovedThisTurn) {
                             ml.moveRight();
-                            timesMoved++;
                             hasMovedThisTurn = true;
                         }
                     }
                 }
                 else {
-                    if(ml.shortestPath == null) {
+                    if(ml.shortestPath == null) { //If there were no obstacles move right
                         log.error("2");
                         if(!hasMovedThisTurn) {
                             ml.moveRight();
-                            timesMoved++;
                             hasMovedThisTurn = true;
                         }
                     }
-                    else if(lightsToMovesMap.get(ml) >= ml.shortestPath.getLength()) {
+                    else if(lightsToMovesMap.get(ml) >= ml.shortestPath.getLength()) { //If we've come to the end of our A* path then reset the A* moves and mvoe right
                         log.error("1");
                         if(!hasMovedThisTurn) {
                             ml.moveRight();
-                            timesMoved++;
                             lightsToMovesMap.put(ml, 0);
                             movementMap.put(ml, false);
                             hasMovedThisTurn = true;
                         }
                     }
-                    else {
+                    else { //If we are still on our A* path then move to the next position in the A* path
                         if(!hasMovedThisTurn) {
                             int moveNum = lightsToMovesMap.get(ml);
                             log.error("CURR: x = "+ml.getX()+ " y = "+ml.getY());
@@ -422,34 +331,19 @@ public class SweepPlayer extends mosquito.sim.Player {
                             ml.moveTo(ml.shortestPath.getX(moveNum), ml.shortestPath.getY(moveNum));
                             log.error(ml +"   distance: x = "+(ml.shortestPath.getX(moveNum) - ml.getX())+" y = "+(ml.shortestPath.getY(moveNum) - ml.getY())); //Log the distance between the current position and the next position.
                             moveNum++;
-                            timesMoved++;
                             lightsToMovesMap.put(ml, moveNum);
                             hasMovedThisTurn = true;
                         }
                     }
                 }
             }
-            else {
-//                if(ml.getX() == 97 && ml.getY() == 50 ) {
-//                    log.error("THIS HAPPENED WOW "+ml.numMovesAtCollector2);
-//                    if(ml.numMovesAtCollector2 >= 20) {
-//                        log.error("CHECK");
-//                        ml.hasReachedRightSide = true;
-//                        movementMap.put(ml, false);
-//                        lightsToMovesMap.put(ml, 0);
-//                    }
-//                    else {
-//                        log.error("CHECK2");
-//                        ml.numMovesAtCollector2++;
-//                        continue;
-//                    }
-//                }
-                if(!movementMap.get(ml)) {
-                    List<Point2D.Double> mosquitoLocations = getMosquitoLocationsByDistance(board, ml);
+            else { //If we've finished phase one (i.e reached the collector once) then do this
+                if(!movementMap.get(ml)) { // If we aren't on an A* path
+                    List<Point2D.Double> mosquitoLocations = getMosquitoLocationsByDistance(board, ml); //Get locations of all the mosquitos ordered in descending order by distance
                     if(!mosquitoLocations.isEmpty()) {
-                        AreaMap cleanMap = new AreaMap(100,100);
-                        for(int i = 0; i < board.length; i++) {
-                            for(int j = 0; j < board[0].length; j++) {
+                        AreaMap cleanMap = new AreaMap(101,101);
+                        for(int i = 0; i <= board.length; i++) {
+                            for(int j = 0; j <= board[0].length; j++) {
                                 for(Line2D wall: walls) {
                                     if(wall.ptSegDist(i, j) < 2.0) {
                                         cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
@@ -459,33 +353,32 @@ public class SweepPlayer extends mosquito.sim.Player {
                         }
                         FHeuristic fh = new FHeuristic();
                         astar = new AStar(cleanMap, fh);
-                        astar.calcShortestPath((int)ml.getX(), 
+                        astar.calcShortestPath((int)ml.getX(),    //Calculate a* path to the farthest mosquito
                                 (int) ml.getY(), 
                                 (int)mosquitoLocations.get(0).getX(), 
                                 (int)mosquitoLocations.get(0).getY());
-                        ml.currDestinationX = mosquitoLocations.get(0).getX();
+                        ml.currDestinationX = mosquitoLocations.get(0).getX(); 
                         ml.currDestinationY = mosquitoLocations.get(0).getY();
                         ml.shortestPath = astar.shortestPath;
                         movementMap.put(ml, true);
                         log.error("Current x: "+ml.getX());
                         log.error("Current y: "+ml.getY());
                         if(ml.shortestPath != null) {
-                            log.error("Moving to x = "+ml.shortestPath.getX(0));
+                            log.error("Moving to x = "+ml.shortestPath.getX(0)); //Start moving towards farthest mosquito
                             log.error("Moving to y = "+ml.shortestPath.getY(0));
                             ml.moveTo(ml.shortestPath.getX(0), ml.shortestPath.getY(0));
-                            timesMoved++;
                             lightsToMovesMap.put(ml, 1);
                         }
                     }
                 }
-                else if(ml.getX() == ml.currDestinationX && ml.getY() == ml.currDestinationY) {
+                else if(ml.getX() == ml.currDestinationX && ml.getY() == ml.currDestinationY) { //Once we've reached the farthest mosquito we now go back to the collector
                     movementMap.put(ml, true);
                     ml.currDestinationX = 0;
                     ml.currDestinationY = 0;
                     lightsToMovesMap.put(ml, 0);
-                    AreaMap cleanMap = new AreaMap(100,100);
-                    for(int i = 0; i < board.length; i++) {
-                        for(int j = 0; j < board[0].length; j++) {
+                    AreaMap cleanMap = new AreaMap(101,101);
+                    for(int i = 0; i <= board.length; i++) {
+                        for(int j = 0; j <= board[0].length; j++) {
                             for(Line2D wall: walls) {
                                 if(wall.ptSegDist(i, j) < 2.0) {
                                     if(i==99 && j==50) {
@@ -509,24 +402,21 @@ public class SweepPlayer extends mosquito.sim.Player {
                         log.error("Moving to x = "+ml.shortestPath.getX(0));
                         log.error("Moving to y = "+ml.shortestPath.getY(0));
                         ml.moveTo(ml.shortestPath.getX(0), ml.shortestPath.getY(0));
-                        timesMoved++;
                         lightsToMovesMap.put(ml, 1);
                     }
                     continue;
                 }
-                else {
+                else { //If we haven't reached the furthest mosquito then continue moving towards it using the A* path
                     int moveNum = lightsToMovesMap.get(ml);
                     log.error("CURR: x = "+ml.getX()+ " y = "+ml.getY());
                     log.error("PATH: x = "+ml.shortestPath.getX(moveNum)+" y = "+ml.shortestPath.getY(moveNum));//Log the place we are moving to
                     ml.moveTo(ml.shortestPath.getX(moveNum), ml.shortestPath.getY(moveNum));
                     log.error(ml +"   distance: x = "+(ml.shortestPath.getX(moveNum) - ml.getX())+" y = "+(ml.shortestPath.getY(moveNum) - ml.getY())); //Log the distance between the current position and the next position.
                     moveNum++;
-                    timesMoved++;
                     lightsToMovesMap.put(ml, moveNum);
                 }
             }
         }
-//      log.error("Times moved: "+timesMoved);
         return lights;
     }
     
@@ -534,7 +424,7 @@ public class SweepPlayer extends mosquito.sim.Player {
         List<Point2D.Double> result = new ArrayList<Point2D.Double>();
         for(int i = 0; i < 100; i++) {
             for(int j = 0; j < 100; j++) {
-                if(i < 95 && (j < 48 || j > 52) && !isNearAnotherLight(i,j,ml)) {
+                if(i < 95 && (j < 48 || j > 52) && !isNearAnotherLight(i,j,ml)) { //If the mosquito isn't near the collector and it isn't near another light
                     if(board[i][j] != 0) {
                         result.add(new Point2D.Double(i, j));
                     }
@@ -544,7 +434,7 @@ public class SweepPlayer extends mosquito.sim.Player {
         Collections.sort(result, new Comparator<Point2D.Double>() {
 
             @Override
-            public int compare(Point2D.Double o1, Point2D.Double o2) {
+            public int compare(Point2D.Double o1, Point2D.Double o2) { //Sort the mosquito's in descending order by distance.
                 Point2D.Double origin = new Point2D.Double(97, 50);
                 double o1Distance = origin.distance(o1);
                 double o2Distance = origin.distance(o2);
@@ -561,8 +451,8 @@ public class SweepPlayer extends mosquito.sim.Player {
         return result;
     }
     
-    public boolean isNearAnotherLight(int i, int j, MoveableLight ml) {
-        for(MoveableLight other: mlights) {
+    public boolean isNearAnotherLight(int i, int j, MoveableLight ml) { //Returns if the the mosquitos at this point are near another light (to avoid random bugs like one light moving to another light
+       for(MoveableLight other: mlights) {                              //unnecessarily because the other light would have already caught the mosquitos).
             if(other.getLocation() != ml.getLocation()) {
                 Point2D.Double locationOfOther = (Point2D.Double) other.getLocation();
                 Point2D.Double locationOfMosquito = new Point2D.Double(i,j);

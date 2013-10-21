@@ -24,7 +24,7 @@ public class MoveableLight extends Light {
 	public int numTurnsAtCorner = 0;
 	public boolean hasStoppedAtCorner = false;
 	public int numMovesSinceStopped = 0;
-	public boolean hasReachedRightSide = false;
+	public boolean hasFinishedPhaseOne = false;
 	public int numMovesAtCollector = 0;
 	public int numMovesAtCollector2 = 0;
 	
@@ -42,6 +42,7 @@ public class MoveableLight extends Light {
 		waypoints = new ArrayList<Point2D>();
 		shortestPaths = new ArrayList<Path>();
 		shortestPath = new Path();
+		currPath = new Path(); 
 	}
 	
 	private boolean isLightOn = true;
