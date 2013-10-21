@@ -203,15 +203,16 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 	public Set<Light> updateLights(int[][] board) {
 		
 		for (MoveableLight ml : mlights) {
-            if(ml.getX() == getCollector().getX() && ml.getY() == getCollector().getY() && !movementMap.get(ml)) { //If you've reached the collector, stay there for 15 moves
+			//TODO: VISHWA, this movementMap.get(ml) isn't  being set correctly. we're only returning to the collector once now
+            if(ml.getX() == getCollector().getX() && ml.getY() == getCollector().getY() /*&& !movementMap.get(ml)*/) { //If you've reached the collector, stay there for 15 moves
                 if(ml.numMovesAtCollector >= 15) { //If you've stayed at the collector for 15 moves then time to move on
                     ml.hasFinishedPhaseOne = true;
-                    log.error("Phase One Complete");
+                    ml.numMovesAtCollector = 0;
                     movementMap.put(ml, false); //This is a hashmap that tells us whether each light is currently on an A* path
                     lightsToMovesMap.put(ml, 0); //This hashmap tells us what move number is the current light in, in its A* path
                 }
                 else {
-                    ml.numMovesAtCollector++; //If you haven't stayed for 15 moves yet, stay put and increement your movesAtCollector
+                    ml.numMovesAtCollector++; //If you haven't stayed for 15 moves yet, stay put and increment your movesAtCollector
                     continue;
                 }
             }
@@ -220,16 +221,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 				if(!movementMap.get(ml)) { // If we aren't on an A* path
 	                List<Point2D.Double> mosquitoLocations = getMosquitoLocationsByDistance(board, ml); //Get locations of all the mosquitos ordered in descending order by distance
 	                if(!mosquitoLocations.isEmpty()) {
-	                    AreaMap cleanMap = new AreaMap(101,101);
-	                    for(int i = 0; i <= board.length; i++) {
-	                        for(int j = 0; j <= board[0].length; j++) {
-	                            for(Line2D wall: walls) {
-	                                if(wall.ptSegDist(i, j) < 2.0) {
-	                                    cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
-	                                }
-	                            }
-	                        }
-	                    }
+	                    AreaMap cleanMap = generateAreaMap(board, walls);
 	                    FHeuristic fh = new FHeuristic();
 	                    astar = new AStar(cleanMap, fh);
 	                    astar.calcShortestPath((int)ml.getX(),    //Calculate a* path to the farthest mosquito
@@ -251,23 +243,11 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 	                }
 	            }
 	            else if(ml.getX() == ml.currDestinationX && ml.getY() == ml.currDestinationY) { //Once we've reached the farthest mosquito we now go back to the collector
-	                movementMap.put(ml, true);
+	            	movementMap.put(ml, true);
 	                ml.currDestinationX = 0;
 	                ml.currDestinationY = 0;
 	                lightsToMovesMap.put(ml, 0);
-	                AreaMap cleanMap = new AreaMap(101,101);
-	                for(int i = 0; i <= board.length; i++) {
-	                    for(int j = 0; j <= board[0].length; j++) {
-	                        for(Line2D wall: walls) {
-	                            if(wall.ptSegDist(i, j) < 2.0) {
-	                                if(i==99 && j==50) {
-	                                    log.error("REMOVE IMPORTANT NODE!!!");
-	                                }
-	                                cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
-	                            }
-	                        }
-	                    }
-	                }
+	                AreaMap cleanMap = generateAreaMap(board, walls);
 	                FHeuristic fh = new FHeuristic();
 	                astar = new AStar(cleanMap, fh);
 	                astar.calcShortestPath((int)ml.getX(), (int) ml.getY(), (int)getCollector().getX(), (int)getCollector().getY());
