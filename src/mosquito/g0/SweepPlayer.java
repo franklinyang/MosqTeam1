@@ -157,7 +157,7 @@ public class SweepPlayer extends mosquito.sim.Player {
         mlights = new HashSet<MoveableLight>();
         for(int a = 0; a<numLights; a++)
         {
-            AreaMap cleanMap = new AreaMap(100,100);
+            AreaMap cleanMap = new AreaMap(101,101);
             for(int i = 0; i < board.length; i++) {
                 for(int j = 0; j < board[0].length; j++) {
                     for(Line2D wall: walls) {
@@ -205,9 +205,9 @@ public class SweepPlayer extends mosquito.sim.Player {
             if(!ml.hasFinishedPhaseOne) { //If we are still sweeping from left to right (i.e Phase 1 of the strategy)
                 if(ml.getX() == 97 && !movementMap.get(ml)) { //If we've reached the right side of the board after sweeping from left to right AND we aren't on an A* path as it is
                     log.error("REACHED THE OTHER SIDE !!!!!!!!");
-                    AreaMap cleanMap = new AreaMap(100,100);
-                    for(int i = 0; i < board.length; i++) {
-                        for(int j = 0; j < board[0].length; j++) {
+                    AreaMap cleanMap = new AreaMap(101,101);
+                    for(int i = 0; i <= board.length; i++) {
+                        for(int j = 0; j <= board[0].length; j++) {
                             for(Line2D wall: walls) {
                                 if(wall.ptSegDist(i, j) < 2.0) { //Create our A* graph by marking something as an obstacle if it's within 2 units of distance
                                     cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
@@ -271,9 +271,9 @@ public class SweepPlayer extends mosquito.sim.Player {
                         if(obstacle.ptSegDistSq(ml.getX(), ml.getY()) <= 4.0) { //We've detected an obstacle 
                             log.error("ENTERED BAD AREA!!! : "+ml);
                             hasHitWall = true;
-                            AreaMap cleanMap = new AreaMap(100,100);
-                            for(int i = 0; i < board.length; i++) {
-                                for(int j = 0; j < board[0].length; j++) {
+                            AreaMap cleanMap = new AreaMap(101,101);
+                            for(int i = 0; i <= board.length; i++) {
+                                for(int j = 0; j <= board[0].length; j++) {
                                     for(Line2D wall: walls) {
                                         if(wall.ptSegDist(i, j) < 2.0) {
                                             cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
@@ -341,9 +341,9 @@ public class SweepPlayer extends mosquito.sim.Player {
                 if(!movementMap.get(ml)) { // If we aren't on an A* path
                     List<Point2D.Double> mosquitoLocations = getMosquitoLocationsByDistance(board, ml); //Get locations of all the mosquitos ordered in descending order by distance
                     if(!mosquitoLocations.isEmpty()) {
-                        AreaMap cleanMap = new AreaMap(100,100);
-                        for(int i = 0; i < board.length; i++) {
-                            for(int j = 0; j < board[0].length; j++) {
+                        AreaMap cleanMap = new AreaMap(101,101);
+                        for(int i = 0; i <= board.length; i++) {
+                            for(int j = 0; j <= board[0].length; j++) {
                                 for(Line2D wall: walls) {
                                     if(wall.ptSegDist(i, j) < 2.0) {
                                         cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
@@ -376,9 +376,9 @@ public class SweepPlayer extends mosquito.sim.Player {
                     ml.currDestinationX = 0;
                     ml.currDestinationY = 0;
                     lightsToMovesMap.put(ml, 0);
-                    AreaMap cleanMap = new AreaMap(100,100);
-                    for(int i = 0; i < board.length; i++) {
-                        for(int j = 0; j < board[0].length; j++) {
+                    AreaMap cleanMap = new AreaMap(101,101);
+                    for(int i = 0; i <= board.length; i++) {
+                        for(int j = 0; j <= board[0].length; j++) {
                             for(Line2D wall: walls) {
                                 if(wall.ptSegDist(i, j) < 2.0) {
                                     if(i==99 && j==50) {
@@ -417,7 +417,6 @@ public class SweepPlayer extends mosquito.sim.Player {
                 }
             }
         }
-//      log.error("Times moved: "+timesMoved);
         return lights;
     }
     

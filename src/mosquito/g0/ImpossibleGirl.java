@@ -203,7 +203,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 	public Set<Light> updateLights(int[][] board) {
 		
 		for (MoveableLight ml : mlights) {
-            if(ml.getX() == getCollector().getX() && ml.getY() == getCollector().getY()) { //If you've reached the collector, stay there for 15 moves
+            if(ml.getX() == getCollector().getX() && ml.getY() == getCollector().getY() && !movementMap.get(ml)) { //If you've reached the collector, stay there for 15 moves
                 if(ml.numMovesAtCollector >= 15) { //If you've stayed at the collector for 15 moves then time to move on
                     ml.hasFinishedPhaseOne = true;
                     log.error("Phase One Complete");
@@ -220,9 +220,9 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 				if(!movementMap.get(ml)) { // If we aren't on an A* path
 	                List<Point2D.Double> mosquitoLocations = getMosquitoLocationsByDistance(board, ml); //Get locations of all the mosquitos ordered in descending order by distance
 	                if(!mosquitoLocations.isEmpty()) {
-	                    AreaMap cleanMap = new AreaMap(100,100);
-	                    for(int i = 0; i < board.length; i++) {
-	                        for(int j = 0; j < board[0].length; j++) {
+	                    AreaMap cleanMap = new AreaMap(101,101);
+	                    for(int i = 0; i <= board.length; i++) {
+	                        for(int j = 0; j <= board[0].length; j++) {
 	                            for(Line2D wall: walls) {
 	                                if(wall.ptSegDist(i, j) < 2.0) {
 	                                    cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
@@ -255,9 +255,9 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 	                ml.currDestinationX = 0;
 	                ml.currDestinationY = 0;
 	                lightsToMovesMap.put(ml, 0);
-	                AreaMap cleanMap = new AreaMap(100,100);
-	                for(int i = 0; i < board.length; i++) {
-	                    for(int j = 0; j < board[0].length; j++) {
+	                AreaMap cleanMap = new AreaMap(101,101);
+	                for(int i = 0; i <= board.length; i++) {
+	                    for(int j = 0; j <= board[0].length; j++) {
 	                        for(Line2D wall: walls) {
 	                            if(wall.ptSegDist(i, j) < 2.0) {
 	                                if(i==99 && j==50) {
@@ -277,15 +277,17 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 	                movementMap.put(ml, true);
 	                log.error("Current x: "+ml.getX());
 	                log.error("Current y: "+ml.getY());
-	                if(ml.shortestPath.getLength() >= 0) {
-	                    log.error("Moving to x = "+ml.shortestPath.getX(0));
-	                    log.error("Moving to y = "+ml.shortestPath.getY(0));
-	                    ml.moveTo(ml.shortestPath.getX(0), ml.shortestPath.getY(0));
-	                    lightsToMovesMap.put(ml, 1);
+	                if(ml.shortestPath != null) {
+    	                if(ml.shortestPath.getLength() > 0) {
+    	                    log.error("Moving to x = "+ml.shortestPath.getX(0));
+    	                    log.error("Moving to y = "+ml.shortestPath.getY(0));
+    	                    ml.moveTo(ml.shortestPath.getX(0), ml.shortestPath.getY(0));
+    	                    lightsToMovesMap.put(ml, 1);
+    	                }
 	                }
 	                continue;
 	            }
-	            else { //If we haven't reached the furthest mosquito then continue moving towards it using the A* path
+	            else if(ml.shortestPath != null){ //If we haven't reached the furthest mosquito then continue moving towards it using the A* path
 	                int moveNum = lightsToMovesMap.get(ml);
 	                log.error("CURR: x = "+ml.getX()+ " y = "+ml.getY());
 	                log.error("PATH: x = "+ml.shortestPath.getX(moveNum)+" y = "+ml.shortestPath.getY(moveNum));//Log the place we are moving to
@@ -294,32 +296,33 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 	                moveNum++;
 	                lightsToMovesMap.put(ml, moveNum);
 	            }
-		}
-            
-			Path currPath = ml.currPath; // get the current path we're working through
-			if (currPath == null) {
-				ml.move = 0;
-				ml.indexOfPath++;
-				if(ml.indexOfPath >= ml.shortestPaths.size())
-					continue;
-				ml.currPath = ml.shortestPaths.get(ml.indexOfPath);
-				continue;
-			}
-						
-			// check to see if we're done moving
-			if (ml.move >= currPath.getLength()) {
-				ml.indexOfPath++;
-				if (ml.indexOfPath >= (ml.shortestPaths.size())) {
-					continue;
-				}
-				
-				ml.currPath = ml.shortestPaths.get(ml.indexOfPath);
-				ml.move = 0;
-				continue;
-			}
-			
-			ml.moveTo(currPath.getX(ml.move), currPath.getY(ml.move));
-			ml.move++;
+            }
+            else { 
+    			Path currPath = ml.currPath; // get the current path we're working through
+    			if (currPath == null) {
+    				ml.move = 0;
+    				ml.indexOfPath++;
+    				if(ml.indexOfPath >= ml.shortestPaths.size())
+    					continue;
+    				ml.currPath = ml.shortestPaths.get(ml.indexOfPath);
+    				continue;
+    			}
+    						
+    			// check to see if we're done moving
+    			if (ml.move >= currPath.getLength()) {
+    				ml.indexOfPath++;
+    				if (ml.indexOfPath >= (ml.shortestPaths.size())) {
+    					continue;
+    				}
+    				
+    				ml.currPath = ml.shortestPaths.get(ml.indexOfPath);
+    				ml.move = 0;
+    				continue;
+    			}
+    			
+    			ml.moveTo(currPath.getX(ml.move), currPath.getY(ml.move));
+    			ml.move++;
+            }
 		}
 		
 		return lights;
@@ -374,9 +377,9 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 
 
 	public AreaMap generateAreaMap(int[][] board, Set<Line2D> walls) {
-		AreaMap cleanMap = new AreaMap(100,100);
-		for(int i = 0; i < board.length; i++) {
-		    for(int j = 0; j < board[0].length; j++) {
+		AreaMap cleanMap = new AreaMap(101,101);
+		for(int i = 0; i <= board.length; i++) {
+		    for(int j = 0; j <= board[0].length; j++) {
 		        for(Line2D wall: walls) {
 		            if(wall.ptSegDist(i, j) < 2.0) {
 		            	cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
@@ -462,9 +465,9 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		
 		// initializing AStar
 		FHeuristic fh = new FHeuristic();
-		AreaMap cleanMap = new AreaMap(100,100);
-	    for(int i = 0; i < board.length; i++) {
-	        for(int j = 0; j < board[0].length; j++) {
+		AreaMap cleanMap = new AreaMap(101,101); //101 because we don't want to miss out the last row and column of the grid
+	    for(int i = 0; i <= board.length; i++) {
+	        for(int j = 0; j <= board[0].length; j++) {
 	            for(Line2D wall: walls) {
 	                if(wall.ptSegDist(i, j) < 2.0) {
 	                	cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
@@ -475,9 +478,9 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		astar = new AStar(cleanMap, fh);
 		
 		for (int i=0; i<numberOfSections; i++) {
-			cleanMap = new AreaMap(100,100);
-		    for(int k = 0; k < board.length; k++) {
-		        for(int l = 0; l < board[0].length; l++) {
+			cleanMap = new AreaMap(101,101);
+		    for(int k = 0; k <= board.length; k++) {
+		        for(int l = 0; l <= board[0].length; l++) {
 		            for(Line2D wall: walls) {
 		                if(wall.ptSegDist(k, l) < 2.0) {
 		                	cleanMap.getNodes().get(k).get(l).isObstacle = true; // nay on the current node
