@@ -230,6 +230,12 @@ public class SweepPlayer extends mosquito.sim.Player {
                         ml.moveTo(ml.shortestPath.getX(0), ml.shortestPath.getY(0)); //Move once in the A* path to initiate the A* movement sequence
                         lightsToMovesMap.put(ml, 1);
                     }
+                    // THIS IS A HACK!!!!! 
+                    // ANYONE WHO READS THIS MUST KNOW THAT IF YOU DO SUCH THINGS IN REAL WORLD PROJECTS 
+                    // KITTENS WILL DIE SPONTANEOUSLY
+                    else {
+                        ml.turnOff();
+                    }
                     continue;
                 }
                 if(ml.hasStoppedAtCorner) { //Code to ensure that we only stop at a corner once to wait for mosquitos to catch up
@@ -283,8 +289,15 @@ public class SweepPlayer extends mosquito.sim.Player {
                             }
                             FHeuristic fh = new FHeuristic();
                             astar = new AStar(cleanMap, fh);
-                            astar.calcShortestPath((int)ml.getX(), (int) ml.getY(), (int)ml.getX()+6, (int) ml.getY()); //Since we've seen an obstacle we need to move the point 6 units to the right
-                            ml.currDestinationX = ml.getX() + 6;
+                            int xCoordToMoveTo = 0;
+                            for(int i = (int) ml.getX() + 2; i < 101; i++) {
+                                if(!cleanMap.getNodes().get(i).get((int)ml.getY()).isObstacle) {
+                                    xCoordToMoveTo = i;
+                                    break;
+                                }
+                            }
+                            astar.calcShortestPath((int)ml.getX(), (int) ml.getY(), xCoordToMoveTo, (int) ml.getY()); //Since we've seen an obstacle we need to move the point 6 units to the right
+                            ml.currDestinationX = xCoordToMoveTo;
                             ml.currDestinationY = ml.getY();
                             ml.shortestPath = astar.shortestPath;
                             movementMap.put(ml, true);
@@ -295,6 +308,12 @@ public class SweepPlayer extends mosquito.sim.Player {
                                 log.error("Moving to y = "+ml.shortestPath.getY(0));
                                 ml.moveTo(ml.shortestPath.getX(0), ml.shortestPath.getY(0));
                                 lightsToMovesMap.put(ml, 1);
+                            }
+                            // THIS IS A HACK!!!!! 
+                            // ANYONE WHO READS THIS MUST KNOW THAT IF YOU DO SUCH THINGS IN REAL WORLD PROJECTS 
+                            // KITTENS WILL DIE SPONTANEOUSLY
+                            else if(ml.shortestPath == null){
+                                ml.turnOff();
                             }
                         }
                     }
@@ -453,7 +472,7 @@ public class SweepPlayer extends mosquito.sim.Player {
     
     public boolean isNearAnotherLight(int i, int j, MoveableLight ml) { //Returns if the the mosquitos at this point are near another light (to avoid random bugs like one light moving to another light
        for(MoveableLight other: mlights) {                              //unnecessarily because the other light would have already caught the mosquitos).
-            if(other.getLocation() != ml.getLocation()) {
+            if(other.getLocation() != ml.getLocation() && other.isOn()) {
                 Point2D.Double locationOfOther = (Point2D.Double) other.getLocation();
                 Point2D.Double locationOfMosquito = new Point2D.Double(i,j);
                 if (locationOfOther.distance(locationOfMosquito) < 8) {
