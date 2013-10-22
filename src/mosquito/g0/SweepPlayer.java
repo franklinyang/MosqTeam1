@@ -22,30 +22,13 @@ import org.jgrapht.alg.CycleDetector;
 public class SweepPlayer extends mosquito.sim.Player {
     
     CycleDetector a;
-    
-    class Section {
-        Line2D l;
-        Line2D r;
-        Line2D u;
-        Line2D d;
-        
-        boolean visited;
-        
-        private Section(Line2D l, Line2D r, Line2D u, Line2D d) {
-            this.l = l;
-            this.r = r;
-            this.u = u;
-            this.d = d;
-            visited = false;
-        }
-    }
 
     private int numLights;
     
     private Light[] allLights;
     private Point2D.Double lastLight;
     private Logger log = Logger.getLogger(this.getClass()); // for logging
-    private LinkedList<Section> boardSections = new LinkedList<Section>();
+    private LinkedList<sweepSection> boardSections = new LinkedList<sweepSection>();
     
     @Override
     public String getName() {
@@ -109,7 +92,7 @@ public class SweepPlayer extends mosquito.sim.Player {
         Line2D u = new Line2D.Double(uL, uR);
         Line2D d = new Line2D.Double(lL, lR);
         
-        Section boundary = new Section(l, r, u, d);
+        sweepSection boundary = new sweepSection(l, r, u, d);
         ArrayList<Double> sortedVerticalLines = new ArrayList<Double>();
         boardSections.add(boundary);
         
