@@ -1,7 +1,6 @@
 package mosquito.g0;
 
 import java.awt.geom.Line2D;
-
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -9,9 +8,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-
+import java.util.Random;
 import java.util.List;
-
 import java.util.Set;
 import java.util.PriorityQueue;
 
@@ -28,6 +26,12 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		return "I section things";
 	}
 	
+	//Related to which appraoch will be used
+	public static final int SECTION = 0;
+	public static final int SWEEP = 1;
+	public static final int GREEDY = 2;
+	private int currentApproach = 0;
+  
 	// general instance variables relevant to our problem
 	private Set<Light> lights;
 	private Set<Line2D> walls;
@@ -41,11 +45,18 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 	// related to astar
 	private AStar astar;
 	
-	// related to sections
+	// related to SECTIONS
 	private int pointLineRelationships[][][];
 	private ArrayList<Section> sections = new ArrayList<Section>();
 	int numberOfSections;
-//	ArrayList<Section> prunedSections;
+	//	ArrayList<Section> prunedSections;
+	
+	//related to SWEEP
+	private HashMap<Integer, Integer> numLightsToSpacingMap = new HashMap<Integer, Integer>();
+	private Point2D.Double lastLight;
+	private Set<MoveableLight> sweeplights;
+	private Light[] allLights;
+    
 	
 	// related to prims
 	private int[] orderedSections;
@@ -63,81 +74,43 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 	 */
 	@Override
 	public ArrayList<Line2D> startNewGame(Set<Line2D> walls, int numLights) {
-		/********* TEST SUITE*************/
-		/*
-		WeightedGraph testGraph = new WeightedGraph(6); 
-		int[] testResult = new int[numberOfSections];
-		
-//		testGraph.addEdge(0, 1, 34);
-//		testGraph.addEdge(1, 0, 34);
-//		testGraph.addEdge(0, 2, 1);
-//		testGraph.addEdge(2, 0, 1);
-//		testGraph.addEdge(0, 3, 5);
-//		testGraph.addEdge(3, 0, 5);
-//		testGraph.addEdge(1, 2, 4);
-//		testGraph.addEdge(2, 1, 4);
-//		testGraph.addEdge(1, 3, 66);
-//		testGraph.addEdge(3, 1, 66);
-//		testGraph.addEdge(2, 3, 34);
-//		testGraph.addEdge(3, 2, 34);
-//		testGraph.addEdge(0, 0, 99);
-//		testGraph.addEdge(1, 1, 99);
-//		testGraph.addEdge(2, 2, 99);
-//		testGraph.addEdge(3, 3, 99);
-//		testGraph.print();
-
-        testGraph.addEdge (0,1,2);
-        testGraph.addEdge (0,5,9);
-        testGraph.addEdge (1,2,8);
-        testGraph.addEdge (1,3,15);
-        testGraph.addEdge (1,5,6);
-        testGraph.addEdge (2,3,1);
-        testGraph.addEdge (4,3,3);
-        testGraph.addEdge (4,2,7);
-        testGraph.addEdge (5,4,3);
-		log.error("Neighbor of 0: "+Arrays.toString(testGraph.neighbors(0)));
-		log.error("Neighbor of 1: "+Arrays.toString(testGraph.neighbors(1)));
-		log.error("Neighbor of 2: "+Arrays.toString(testGraph.neighbors(2)));
-		log.error("Neighbor of 3: "+Arrays.toString(testGraph.neighbors(3)));
-		log.error("Neighbor of 4: "+Arrays.toString(testGraph.neighbors(4)));
-		log.error("Neighbor of 5: "+Arrays.toString(testGraph.neighbors(5)));
-		testResult = TPrim.Prim(testGraph);
-//		testResult = Prims.prim(testGraph, 0);
-		//testResult = Dijkstra.dijkstra(testGraph, 0);
-//		testResult = PrimMinimumSpanningTree.mininumSpanningTree(testGraph.edges);
-//		
-	    for (int i=0; i<6; i++) {
-	    	log.error("The " + -i + "th point to visit is: " + testResult[i]);
-	    }*/
-		/**************END TEST***********/
 		this.numLights = numLights;
 		this.walls = walls;
-		pointLineRelationships = new int[100][100][walls.size()];
 		ArrayList<Line2D> lines = new ArrayList<Line2D>();
-		sectioningAlgorithm();
-		identifySections(pointLineRelationships);
 		
-		// set the midpoints for each of the sections
-		for(int i = 0; i < sections.size(); i++) {
-			sections.get(i).setMidpoints();
-		}
+		//Choose which approach will initially be used to clear the board
+		if (walls.size() < 70) currentApproach = SECTION;
+		else if (1==1) currentApproach = SWEEP;  //TODO: Define situations where sweeping is not optimal;
+															//ie, the board has many vertical barriers
+		else currentApproach = GREEDY;
+		
+		if (currentApproach == SECTION) {
+			pointLineRelationships = new int[100][100][walls.size()];
+			sectioningAlgorithm();
+			identifySections(pointLineRelationships);
+			
+			// set the midpoints for each of the sections
+			for(int i = 0; i < sections.size(); i++) {
+				sections.get(i).setMidpoints();
+			}
+					
+			this.sections = this.pruneSections(this.sections, walls);
+			numberOfSections = this.sections.size();
+			
+			for (int i=0; i<numberOfSections; i++) {
+				//Draw some nice lines to mark waypoints
+				Point2D ul = new Point2D.Double(sections.get(i).midX-1, sections.get(i).midY-1);
+				Point2D ll = new Point2D.Double(sections.get(i).midX-1, sections.get(i).midY+1);
+				Point2D ur = new Point2D.Double(sections.get(i).midX+1, sections.get(i).midY-1);
+				Point2D lr = new Point2D.Double(sections.get(i).midX+1, sections.get(i).midY+1);
 				
-		this.sections = this.pruneSections(this.sections, walls);
-		numberOfSections = this.sections.size();
-		
-		for (int i=0; i<numberOfSections; i++) {
-			
-			Point2D ul = new Point2D.Double(sections.get(i).midX-1, sections.get(i).midY-1);
-			Point2D ll = new Point2D.Double(sections.get(i).midX-1, sections.get(i).midY+1);
-			Point2D ur = new Point2D.Double(sections.get(i).midX+1, sections.get(i).midY-1);
-			Point2D lr = new Point2D.Double(sections.get(i).midX+1, sections.get(i).midY+1);
-			
-			Line2D c1 = new Line2D.Double(ul, lr);
-			Line2D c2 = new Line2D.Double(ll, ur);
-			
-			lines.add(c1);
-			lines.add(c2);
-			
+				Line2D c1 = new Line2D.Double(ul, lr);
+				Line2D c2 = new Line2D.Double(ll, ur);
+				
+				lines.add(c1);
+				lines.add(c2);
+				
+			}
 		}
 		return lines;
 	}
@@ -150,90 +123,134 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 	 * number of mosquitoes at coordinate (x, y)
 	 */
 	public Set<Light> getLights(int[][] board) {
+		
+		if (currentApproach == SECTION) {
+			// initializing AStar
+			FHeuristic fh = new FHeuristic();
+			lights = new HashSet<Light>();
+			mlights = new ArrayList<MoveableLight>();
+			this.orderedSections = findOptimalRoute(board, numberOfSections, sections);
+		    
+		    for (int i=0; i<numberOfSections; i++) {
+		    	log.error("The " + i + "th point to visit is: (" + sections.get(orderedSections[i]).midX + " , " +
+		    			sections.get(orderedSections[i]).midY + ").");
+		    }
+	
+			
+			// initially position each of the nights
+			for (int i = 0; i < numLights; i++) {
+				MoveableLight l;
+				if(i > numberOfSections-1) {
+					Random generator = new Random();
+					int rand = generator.nextInt(i);
+					l = new MoveableLight(rand, rand, true);
+	                l.hasFinishedPhaseOne = true;
+	                movementMap.put(l, false); //This is a hashmap that tells us whether each light is currently on an A* path
+	                lightsToMovesMap.put(l, 0); //This hashmap tells us what move number is the current light in, in its A* path
+				}
+				else {
+					//TODO FRANKLIN: look at line below--this is how the lights SHOULD be originally positioned
+					int sectionIndex = orderedSections[i*(numberOfSections/numLights)];
+					// need to place lights on a point where the collector IS NOT
+					l = new MoveableLight(sections.get(sectionIndex).midX, sections.get(sectionIndex).midY, true);
+				}
+				mlights.add(l);
+				lights.add(l);
+				lightsToMovesMap.put(l, 0);
+		        movementMap.put(l, false);
+			}
+		    
+			// add a list of waypoints to each light
+			//TODO FRANKLIN: Match this with the change directly above
+			int index;
+			Point2D waypoint;
+			AreaMap correctMap = generateAreaMap(board, walls);
+			for(int i = 0; i < numberOfSections; i++) {
+				index = i % numLights;
+				waypoint = new Point2D.Double(sections.get(orderedSections[i]).midX, sections.get(orderedSections[i]).midY);
+				if (!correctMap.getNodes().get(sections.get(orderedSections[i]).midX).get(sections.get(orderedSections[i]).midY).isObstacle) {
+					mlights.get(index).waypoints.add(waypoint);
+					this.collectorX = sections.get(orderedSections[i]).midX;
+					this.collectorY = sections.get(orderedSections[i]).midY;
+				}
+			}
+			
+			this.collectorX = (int)getCollector().getX();
+			this.collectorY = (int)getCollector().getY();
+			
+			// for each light, make the last light the collector
+			for (int i = 0; i < numLights; i++) {
+				mlights.get(i).waypoints.add(new Point2D.Double(getCollector().getX(), getCollector().getY()));
+				System.err.println(collectorX + ", " + collectorY);
+	
+			}
+			
+			int len;
+			Point2D currPoint;
+			Point2D nextPoint;
+			// generate paths between waypoints
+			for (MoveableLight currLight : mlights) {
+				len = currLight.waypoints.size();
+				// set all paths in moving light
+				for (int j = 0; j < len-1; j++) {
+					currPoint = currLight.waypoints.get(j);
+					nextPoint = currLight.waypoints.get(j+1);
+					AreaMap cleanMap = generateAreaMap(board, walls);
+					astar = new AStar(cleanMap, fh);
+					log.error((int) currPoint.getX() + "," + (int) currPoint.getY() + " " + (int) nextPoint.getX() + "," + (int) nextPoint.getY());
+					astar.calcShortestPath((int)currPoint.getX(), (int)currPoint.getY(), (int)nextPoint.getX(), (int)nextPoint.getY());
+					currLight.shortestPaths.add(astar.shortestPath);
+				}
+				// initialize paths to first path
+				if(currLight.shortestPaths.size() == 0)
+					continue;
+				currLight.currPath = currLight.shortestPaths.get(0);
+			}
+		    
+			return lights;
+		} //end SECTION
+		
+		
+		else if (currentApproach == SWEEP) {
+			 // initializing AStar
+	        FHeuristic fh = new FHeuristic();
+	        
+	        int x = 0; 
+	        int y = numLightsToSpacingMap.get(numLights);
+	        
+	        lights = new HashSet<Light>();
+	        lastLight = new Point2D.Double(10, 10);
+	        sweeplights = new HashSet<MoveableLight>();
+	        for(int a = 0; a<numLights; a++)
+	        {
+	            AreaMap cleanMap = new AreaMap(101,101);
+	            for(int i = 0; i < board.length; i++) {
+	                for(int j = 0; j < board[0].length; j++) {
+	                    for(Line2D wall: walls) {
+	                        if(wall.ptSegDist(i, j) < 2.0) {
+	                            cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
+	                        }
+	                    }
+	                }
+	            }
+	            astar = new AStar(cleanMap, fh);
+	            lastLight = new Point2D.Double(x, y);
+	            y += numLightsToSpacingMap.get(numLights);
+	            MoveableLight l = new MoveableLight(lastLight.getX(), lastLight.getY(), true);
 
-		// initializing AStar
-		FHeuristic fh = new FHeuristic();
+	            lights.add(l);
+	            
+	            lightsToMovesMap.put(l, 0);
+	            sweeplights.add(l);
+	            movementMap.put(l, false);
+	        }
+	        allLights = lights.toArray(new Light[numLights]);
+	        return lights;
+		} //end SWEEP
 		
-		lights = new HashSet<Light>();
-		mlights = new ArrayList<MoveableLight>();
-		
-		this.orderedSections = findOptimalRoute(board, numberOfSections, sections);
-	    
-	    for (int i=0; i<numberOfSections; i++) {
-	    	log.error("The " + i + "th point to visit is: (" + sections.get(orderedSections[i]).midX + " , " +
-	    			sections.get(orderedSections[i]).midY + ").");
-	    }
-
-		
-		// initially position each of the nights
-		for (int i = 0; i < numLights; i++) {
-			MoveableLight l;
-			if(i > numberOfSections-1) {
-				l = new MoveableLight(50, 50, true);
-                l.hasFinishedPhaseOne = true;
-                movementMap.put(l, false); //This is a hashmap that tells us whether each light is currently on an A* path
-                lightsToMovesMap.put(l, 0); //This hashmap tells us what move number is the current light in, in its A* path
-			}
-			else {
-				int sectionIndex = orderedSections[i];
-				int midX = sections.get(sectionIndex).midX;
-				int midY = sections.get(sectionIndex).midY;
-				// need to place lights on a point where the collector IS NOT
-				l = new MoveableLight(sections.get(sectionIndex).midX, sections.get(sectionIndex).midY, true);
-			}
-			mlights.add(l);
-			lights.add(l);
-			lightsToMovesMap.put(l, 0);
-	        movementMap.put(l, false);
+		else {
+			//GREEDY//
 		}
-	    
-		// add a list of waypoints to each light
-		int index;
-		Point2D waypoint;
-		AreaMap correctMap = generateAreaMap(board, walls);
-		for(int i = 0; i < numberOfSections; i++) {
-			index = i % numLights;
-			waypoint = new Point2D.Double(sections.get(orderedSections[i]).midX, sections.get(orderedSections[i]).midY);
-			if (!correctMap.getNodes().get(sections.get(orderedSections[i]).midX).get(sections.get(orderedSections[i]).midY).isObstacle) {
-				mlights.get(index).waypoints.add(waypoint);
-				this.collectorX = sections.get(orderedSections[i]).midX;
-				this.collectorY = sections.get(orderedSections[i]).midY;
-			}
-		}
-		
-		this.collectorX = (int)getCollector().getX();
-		this.collectorY = (int)getCollector().getY();
-		
-		// for each light, make the last light the collector
-		for (int i = 0; i < numLights; i++) {
-			mlights.get(i).waypoints.add(new Point2D.Double(getCollector().getX(), getCollector().getY()));
-			System.err.println(collectorX + ", " + collectorY);
-
-		}
-		
-		int len;
-		Point2D currPoint;
-		Point2D nextPoint;
-		// generate paths between waypoints
-		for (MoveableLight currLight : mlights) {
-			len = currLight.waypoints.size();
-			// set all paths in moving light
-			for (int j = 0; j < len-1; j++) {
-				currPoint = currLight.waypoints.get(j);
-				nextPoint = currLight.waypoints.get(j+1);
-				AreaMap cleanMap = generateAreaMap(board, walls);
-				astar = new AStar(cleanMap, fh);
-				log.error((int) currPoint.getX() + "," + (int) currPoint.getY() + " " + (int) nextPoint.getX() + "," + (int) nextPoint.getY());
-				astar.calcShortestPath((int)currPoint.getX(), (int)currPoint.getY(), (int)nextPoint.getX(), (int)nextPoint.getY());
-				currLight.shortestPaths.add(astar.shortestPath);
-			}
-			// initialize paths to first path
-			if(currLight.shortestPaths.size() == 0)
-				continue;
-			currLight.currPath = currLight.shortestPaths.get(0);
-		}
-	    
-		return lights;
 	}
 	
 	/*
