@@ -38,14 +38,21 @@ public class SweepPlayer extends mosquito.sim.Player {
             if(x.getX() >= ul.getX() && x.getY() >= ul.getY()
                     && x.getX() <= ur.getX() && x.getY() >= ur.getY()
                     && x.getX() >= bl.getX() && x.getY() <= bl.getY()
-                    && x.getX() <= br.getX() && x.getY() <= br.getX()) {
+                    && x.getX() <= br.getX() && x.getY() <= br.getY()) {
                 return true;
             }
             return false;
         }
 
         public boolean equals(Section other) {
-            if(other.bl.equals(this.bl) && other.br.equals(this.br) && other.ul.equals(this.ul) && other.ur.equals(this.ur)) {
+            if(other.bl.getX() == this.bl.getX()
+                    && other.bl.getY() == this.bl.getY()
+                    && other.br.getX() == this.br.getX()
+                    && other.br.getY() == this.br.getY()
+                    && other.ul.getX() == this.ul.getX()
+                    && other.ul.getY() == this.ul.getY()
+                    && other.ur.getX() == this.ur.getX()
+                    && other.ur.getY() == this.ur.getY()) {
                 return true;
             }
             else {
@@ -405,6 +412,10 @@ public class SweepPlayer extends mosquito.sim.Player {
                                         "("+currSection.ur.getX()+","+currSection.ur.getY()+"), "+
                                         "("+currSection.bl.getX()+","+currSection.bl.getY()+"), "+
                                         "("+currSection.br.getX()+","+currSection.br.getY()+")");
+                            log.error("Size of mosquitoLocationsBeingUsed = "+mosquitoLocationsBeingUsed.size());
+                            for(Section section: mosquitoLocationsBeingUsed) {
+                                log.error("lol: "+section);
+                            }
                             if(!mosquitoLocationsBeingUsed.contains(currSection)) {
                                 furthestMosquitoLocation = mosquitoLocation;
                                 mosquitoLocationsBeingUsed.add(currSection);
@@ -435,7 +446,9 @@ public class SweepPlayer extends mosquito.sim.Player {
                 }
                 else if(ml.getX() == ml.currDestinationX && ml.getY() == ml.currDestinationY) { //Once we've reached the farthest mosquito we now go back to the collector
                     Section section = getSectionOfMosquito(new Point2D.Double(ml.getX(), ml.getY()));
-                    mosquitoLocationsBeingUsed.remove(section);
+                    if(!mosquitoLocationsBeingUsed.remove(section)) {
+                        log.error("LOCATION BEING REMOVED NOT FOUND");
+                    }
                     ml.turnOn();
                     movementMap.put(ml, true);
                     ml.currDestinationX = 0;
