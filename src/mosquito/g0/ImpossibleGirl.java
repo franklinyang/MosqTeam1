@@ -196,12 +196,15 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 			lights = new HashSet<Light>();
 			mlights = new ArrayList<MoveableLight>();
 			this.orderedSections = findOptimalRoute(board, numberOfSections, sections);
-		    
-		    for (int i=0; i<numberOfSections; i++) {
-		    	log.error("The " + i + "th point to visit is: (" + sections.get(orderedSections[i]).midX + " , " +
-		    			sections.get(orderedSections[i]).midY + ").");
-		    }
+			
+			int collectorIndex = this.orderedSections.length / 2;
+			int sectionSize = (numberOfSections-1) / numLights;
+
+			this.collectorX = sections.get(this.orderedSections[collectorIndex]).midX;
+			this.collectorY = sections.get(this.orderedSections[collectorIndex]).midY;
+			sections.get(this.orderedSections[collectorIndex]).visited = true;
 	
+			int distFromEnd = 0;
 			// initially position each of the nights
 			for (int i = 0; i < numLights; i++) {
 				MoveableLight l;
@@ -209,15 +212,54 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 					Random generator = new Random();
 					int rand = generator.nextInt(i);
 					l = new MoveableLight(rand, rand, true);
+					l.waypoints.add(new Point2D.Double(rand, rand));
 	                l.hasFinishedPhaseOne = true;
 	                movementMap.put(l, false); //This is a hashmap that tells us whether each light is currently on an A* path
 	                lightsToMovesMap.put(l, 0); //This hashmap tells us what move number is the current light in, in its A* path
 				}
+				// to the right of the collector...
+				else if(i <= numLights/2) {
+					int sectionIndex = orderedSections[sectionSize*i];
+					if(!sections.get(sectionIndex).visited) {
+						l = new MoveableLight(sections.get(sectionIndex).midX, sections.get(sectionIndex).midY, true);
+						l.waypoints.add(new Point2D.Double(sections.get(sectionIndex).midX, sections.get(sectionIndex).midY));
+						sections.get(sectionIndex).visited = true;
+					}
+					else {
+						Random generator = new Random();
+						int rand = generator.nextInt(i);
+						l = new MoveableLight(rand, rand, true);
+						l.waypoints.add(new Point2D.Double(sections.get(sectionIndex).midX, sections.get(sectionIndex).midY));
+						l.hasFinishedPhaseOne = true;
+					}
+				}
+				// placing the second half of the lights, beginning from the end light
+				else if(i > numLights/2) {
+					int sectionIndex = orderedSections[numberOfSections-1-distFromEnd*sectionSize];
+					if(!sections.get(sectionIndex).visited) {
+						l = new MoveableLight(sections.get(sectionIndex).midX, sections.get(sectionIndex).midY, true);
+						l.waypoints.add(new Point2D.Double(sections.get(sectionIndex).midX, sections.get(sectionIndex).midY));
+						sections.get(sectionIndex).visited = true;
+					}
+					else {
+						Random generator = new Random();
+						int rand = generator.nextInt(i);
+						l = new MoveableLight(rand,rand, true);
+						l.waypoints.add(new Point2D.Double(sections.get(sectionIndex).midX, sections.get(sectionIndex).midY));
+						l.hasFinishedPhaseOne=true;
+					}
+					distFromEnd++;
+				}
 				else {
+					log.error("SHOULD NEVER HAVE HIT THIS CASE....");
+					log.error("SHOULD NEVER HAVE HIT THIS CASE....");
+					log.error("SHOULD NEVER HAVE HIT THIS CASE....");
+					log.error("SHOULD NEVER HAVE HIT THIS CASE....");
 					//TODO FRANKLIN: look at line below--this is how the lights SHOULD be originally positioned
 					int sectionIndex = orderedSections[i*(numberOfSections/numLights)];
 					// need to place lights on a point where the collector IS NOT
 					l = new MoveableLight(sections.get(sectionIndex).midX, sections.get(sectionIndex).midY, true);
+					l.waypoints.add(new Point2D.Double(sections.get(sectionIndex).midX, sections.get(sectionIndex).midY));
 				}
 				mlights.add(l);
 				lights.add(l);
@@ -227,26 +269,61 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		    
 			// add a list of waypoints to each light
 			//TODO FRANKLIN: Match this with the change directly above
-			int index;
+			int lightIndex = 0;
+			int sectionIndex;
+			boolean isStartPoint;
 			Point2D waypoint;
 			AreaMap correctMap = generateAreaMap(board, walls);
 			for(int i = 0; i < numberOfSections; i++) {
-				index = i % numLights;
+				sectionIndex = orderedSections[i];
+				if(lightIndex > numLights - 1)
+					break;
+				// if we are at the collector, we're done...
+				if(sections.get(sectionIndex).midX == getCollector().getX() && sections.get(sectionIndex).midY == getCollector().getY()) {
+					break;
+				}
+				isStartPoint = mlights.get(lightIndex).getX() == sections.get(lightIndex).midX && mlights.get(lightIndex).getY() == sections.get(lightIndex).midY;
+				if(sections.get(sectionIndex).visited && !isStartPoint) {
+					lightIndex++;
+					continue;
+				}
+				sections.get(sectionIndex).visited=true;
 				waypoint = new Point2D.Double(sections.get(orderedSections[i]).midX, sections.get(orderedSections[i]).midY);
-				if (!correctMap.getNodes().get(sections.get(orderedSections[i]).midX).get(sections.get(orderedSections[i]).midY).isObstacle) {
-					mlights.get(index).waypoints.add(waypoint);
-					this.collectorX = sections.get(orderedSections[i]).midX;
-					this.collectorY = sections.get(orderedSections[i]).midY;
+				if (!correctMap.getNodes().get(sections.get(sectionIndex).midX).get(sections.get(sectionIndex).midY).isObstacle) {
+					mlights.get(lightIndex).waypoints.add(waypoint);
+				}
+			}
+			for(int i = numberOfSections-1; i > 0; i--) {
+				sectionIndex = orderedSections[i];
+				if(lightIndex > numLights - 1)
+					break;
+				if(sections.get(sectionIndex).midX == getCollector().getX() && sections.get(sectionIndex).midY == getCollector().getY()) {
+					lightIndex++;
+					break;
+				}
+				isStartPoint = mlights.get(lightIndex).getX() == sections.get(lightIndex).midX && mlights.get(lightIndex).getY() == sections.get(lightIndex).midY;
+				if(sections.get(sectionIndex).visited && !isStartPoint) {
+					lightIndex++;
+					continue;
+				}
+				sections.get(sectionIndex).visited=true;
+				waypoint = new Point2D.Double(sections.get(sectionIndex).midX, sections.get(sectionIndex).midY);
+				
+				if (!correctMap.getNodes().get(sections.get(sectionIndex).midX).get(sections.get(sectionIndex).midY).isObstacle) {
+					mlights.get(lightIndex).waypoints.add(waypoint);
 				}
 			}
 			
-			this.collectorX = (int)getCollector().getX();
-			this.collectorY = (int)getCollector().getY();
+//			int lindex = 0;
+//			for(MoveableLight currLight : mlights) {
+//				log.error("starting position of light " + lindex + " is " + currLight.getX() + "," + currLight.getY());
+//				lindex++;
+//			}
 			
 			// for each light, make the last light the collector
 			for (int i = 0; i < numLights; i++) {
 				mlights.get(i).waypoints.add(new Point2D.Double(getCollector().getX(), getCollector().getY()));
-				System.err.println(collectorX + ", " + collectorY);
+//				System.err.println(collectorX + ", " + collectorY);
 			}
 			
 			int len;
@@ -255,13 +332,15 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 			// generate paths between waypoints
 			for (MoveableLight currLight : mlights) {
 				len = currLight.waypoints.size();
+//				log.error("size of these waypoints sets are " + len);
+//				log.error("first element is " + currLight.waypoints.get(0));
 				// set all paths in moving light
 				for (int j = 0; j < len-1; j++) {
 					currPoint = currLight.waypoints.get(j);
 					nextPoint = currLight.waypoints.get(j+1);
 					AreaMap cleanMap = generateAreaMap(board, walls);
 					astar = new AStar(cleanMap, fh);
-					log.error((int) currPoint.getX() + "," + (int) currPoint.getY() + " " + (int) nextPoint.getX() + "," + (int) nextPoint.getY());
+//					log.error((int) currPoint.getX() + "," + (int) currPoint.getY() + " " + (int) nextPoint.getX() + "," + (int) nextPoint.getY());
 					astar.calcShortestPath((int)currPoint.getX(), (int)currPoint.getY(), (int)nextPoint.getX(), (int)nextPoint.getY());
 					currLight.shortestPaths.add(astar.shortestPath);
 				}
@@ -289,7 +368,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 	            for(int i = 0; i < board.length; i++) {
 	                for(int j = 0; j < board[0].length; j++) {
 	                    for(Line2D wall: walls) {
-	                        if(wall.ptSegDist(i, j) < 2.0) {
+	                        if(wall.ptSegDist(i, j) < 3.0) {
 	                            cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
 	                        }
 	                    }
@@ -693,14 +772,15 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 			// this one just places a collector next to the last light that was added
 			int x = this.collectorX;
 			int y = this.collectorY;
-			if(x-1 < 0 && y-1 < 0)
-				c = new Collector(x+1, y+1);
-			else if(x-1 < 0)
-				c = new Collector(x, y-1);
-			else if(y-1 < 0)
-				c = new Collector(x-1, y);
-			else
-				c = new Collector(this.collectorX-1, this.collectorY-1);
+			c = new Collector(x, y);
+//			if(x-1 < 0 && y-1 < 0)
+//				c = new Collector(x+1, y+1);
+//			else if(x-1 < 0)
+//				c = new Collector(x, y-1);
+//			else if(y-1 < 0)
+//				c = new Collector(x-1, y);
+//			else
+//				c = new Collector(this.collectorX-1, this.collectorY-1);
 		} //SECTION
 		
 		else if (currentApproach == SWEEP) {
@@ -731,8 +811,8 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 				}
 			}
 		}
-		for(Section s : prunedSections)
-			  System.err.println(s.midX + ", " + s.midY);
+//		for(Section s : prunedSections)
+//			  System.err.println(s.midX + ", " + s.midY);
 		log.error("Pruned Section size is: " + prunedSections.size());
 		return prunedSections;
 	}
@@ -764,10 +844,13 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		        	if(dist < 0.05)
 		        		cleanMap.getNodes().get(i).get(j).heuristicDistanceFromGoal = Integer.MAX_VALUE; // nay on the current node
 		        	else if(dist < 1) {
-		            	cleanMap.getNodes().get(i).get(j).heuristicDistanceFromGoal = 1000;
+		            	cleanMap.getNodes().get(i).get(j).heuristicDistanceFromGoal = 100000;
 		            }
 		        	else if(dist < 2) {
-		        		cleanMap.getNodes().get(i).get(j).heuristicDistanceFromGoal = 10000; // nay on the current node
+		        		cleanMap.getNodes().get(i).get(j).heuristicDistanceFromGoal = 10000; // nay on the curr	ent node
+		        	}
+		        	else if(dist < 3) {
+		        		cleanMap.getNodes().get(i).get(j).heuristicDistanceFromGoal = 1000;
 		        	}
 		        }
 		    }
