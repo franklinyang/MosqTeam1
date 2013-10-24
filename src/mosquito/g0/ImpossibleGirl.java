@@ -596,19 +596,53 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 	                    }
 	                }
 	            }
-	        }
-		} //SWEEP
-		
-		else { //GREEDY
-			for(MoveableLight ml: sweeplights) {
-				if(!movementMap.get(ml)) { // If we aren't on an A* path
-	                List<Point2D.Double> mosquitoLocations = getMosquitoLocationsByDistance(board, ml); //Get locations of all the mosquitos ordered in descending order by distance
-	                if(!mosquitoLocations.isEmpty()) {
+	            else { //If we've finished phase one (i.e reached the collector once) then do this
+	                if(!movementMap.get(ml)) { // If we aren't on an A* path
+	                    List<Point2D.Double> mosquitoLocations = getMosquitoLocationsByDistance(board, ml); //Get locations of all the mosquitos ordered in descending order by distance
+	                    if(!mosquitoLocations.isEmpty()) {
+	                        AreaMap cleanMap = new AreaMap(101,101);
+	                        for(int i = 0; i <= board.length; i++) {
+	                            for(int j = 0; j <= board[0].length; j++) {
+	                                for(Line2D wall: walls) {
+	                                    if(wall.ptSegDist(i, j) < 2.0) {
+	                                        cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
+	                                    }
+	                                }
+	                            }
+	                        }
+	                        FHeuristic fh = new FHeuristic();
+	                        astar = new AStar(cleanMap, fh);
+	                        astar.calcShortestPath((int)ml.getX(),    //Calculate a* path to the farthest mosquito
+	                                (int) ml.getY(), 
+	                                (int)mosquitoLocations.get(0).getX(), 
+	                                (int)mosquitoLocations.get(0).getY());
+	                        ml.currDestinationX = mosquitoLocations.get(0).getX(); 
+	                        ml.currDestinationY = mosquitoLocations.get(0).getY();
+	                        ml.shortestPath = astar.shortestPath;
+	                        movementMap.put(ml, true);
+	                        log.error("Current x: "+ml.getX());
+	                        log.error("Current y: "+ml.getY());
+	                        if(ml.shortestPath != null) {
+	                            log.error("Moving to x = "+ml.shortestPath.getX(0)); //Start moving towards farthest mosquito
+	                            log.error("Moving to y = "+ml.shortestPath.getY(0));
+	                            ml.moveTo(ml.shortestPath.getX(0), ml.shortestPath.getY(0));
+	                            lightsToMovesMap.put(ml, 1);
+	                        }
+	                    }
+	                }
+	                else if(ml.getX() == ml.currDestinationX && ml.getY() == ml.currDestinationY) { //Once we've reached the farthest mosquito we now go back to the collector
+	                    movementMap.put(ml, true);
+	                    ml.currDestinationX = 0;
+	                    ml.currDestinationY = 0;
+	                    lightsToMovesMap.put(ml, 0);
 	                    AreaMap cleanMap = new AreaMap(101,101);
 	                    for(int i = 0; i <= board.length; i++) {
 	                        for(int j = 0; j <= board[0].length; j++) {
 	                            for(Line2D wall: walls) {
 	                                if(wall.ptSegDist(i, j) < 2.0) {
+	                                    if(i==99 && j==50) {
+	                                        log.error("REMOVE IMPORTANT NODE!!!");
+	                                    }
 	                                    cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
 	                                }
 	                            }
@@ -616,71 +650,38 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 	                    }
 	                    FHeuristic fh = new FHeuristic();
 	                    astar = new AStar(cleanMap, fh);
-	                    astar.calcShortestPath((int)ml.getX(),    //Calculate a* path to the farthest mosquito
-	                            (int) ml.getY(), 
-	                            (int)mosquitoLocations.get(0).getX(), 
-	                            (int)mosquitoLocations.get(0).getY());
-	                    ml.currDestinationX = mosquitoLocations.get(0).getX(); 
-	                    ml.currDestinationY = mosquitoLocations.get(0).getY();
+	                    astar.calcShortestPath((int)ml.getX(), (int) ml.getY(), 97, 50);
+	                    ml.currDestinationX = 97;
+	                    ml.currDestinationY = 50;
 	                    ml.shortestPath = astar.shortestPath;
 	                    movementMap.put(ml, true);
 	                    log.error("Current x: "+ml.getX());
 	                    log.error("Current y: "+ml.getY());
 	                    if(ml.shortestPath != null) {
-	                        log.error("Moving to x = "+ml.shortestPath.getX(0)); //Start moving towards farthest mosquito
+	                        log.error("Moving to x = "+ml.shortestPath.getX(0));
 	                        log.error("Moving to y = "+ml.shortestPath.getY(0));
 	                        ml.moveTo(ml.shortestPath.getX(0), ml.shortestPath.getY(0));
 	                        lightsToMovesMap.put(ml, 1);
 	                    }
+	                    continue;
 	                }
-	            }
-	            else if(ml.getX() == ml.currDestinationX && ml.getY() == ml.currDestinationY) { //Once we've reached the farthest mosquito we now go back to the collector
-	                movementMap.put(ml, true);
-	                ml.currDestinationX = 0;
-	                ml.currDestinationY = 0;
-	                lightsToMovesMap.put(ml, 0);
-	                AreaMap cleanMap = new AreaMap(101,101);
-	                for(int i = 0; i <= board.length; i++) {
-	                    for(int j = 0; j <= board[0].length; j++) {
-	                        for(Line2D wall: walls) {
-	                            if(wall.ptSegDist(i, j) < 2.0) {
-	                                if(i==99 && j==50) {
-	                                    log.error("REMOVE IMPORTANT NODE!!!");
-	                                }
-	                                cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
-	                            }
-	                        }
-	                    }
+	                else { //If we haven't reached the furthest mosquito then continue moving towards it using the A* path
+	                    int moveNum = lightsToMovesMap.get(ml);
+	                    log.error("CURR: x = "+ml.getX()+ " y = "+ml.getY());
+	                    log.error("PATH: x = "+ml.shortestPath.getX(moveNum)+" y = "+ml.shortestPath.getY(moveNum));//Log the place we are moving to
+	                    ml.moveTo(ml.shortestPath.getX(moveNum), ml.shortestPath.getY(moveNum));
+	                    log.error(ml +"   distance: x = "+(ml.shortestPath.getX(moveNum) - ml.getX())+" y = "+(ml.shortestPath.getY(moveNum) - ml.getY())); //Log the distance between the current position and the next position.
+	                    moveNum++;
+	                    lightsToMovesMap.put(ml, moveNum);
 	                }
-	                FHeuristic fh = new FHeuristic();
-	                astar = new AStar(cleanMap, fh);
-	                astar.calcShortestPath((int)ml.getX(), (int) ml.getY(), 97, 50);
-	                ml.currDestinationX = 97;
-	                ml.currDestinationY = 50;
-	                ml.shortestPath = astar.shortestPath;
-	                movementMap.put(ml, true);
-	                log.error("Current x: "+ml.getX());
-	                log.error("Current y: "+ml.getY());
-	                if(ml.shortestPath != null) {
-	                    log.error("Moving to x = "+ml.shortestPath.getX(0));
-	                    log.error("Moving to y = "+ml.shortestPath.getY(0));
-	                    ml.moveTo(ml.shortestPath.getX(0), ml.shortestPath.getY(0));
-	                    lightsToMovesMap.put(ml, 1);
-	                }
-	                continue;
-	            }
-	            else { //If we haven't reached the furthest mosquito then continue moving towards it using the A* path
-	                int moveNum = lightsToMovesMap.get(ml);
-	                log.error("CURR: x = "+ml.getX()+ " y = "+ml.getY());
-	                log.error("PATH: x = "+ml.shortestPath.getX(moveNum)+" y = "+ml.shortestPath.getY(moveNum));//Log the place we are moving to
-	                ml.moveTo(ml.shortestPath.getX(moveNum), ml.shortestPath.getY(moveNum));
-	                log.error(ml +"   distance: x = "+(ml.shortestPath.getX(moveNum) - ml.getX())+" y = "+(ml.shortestPath.getY(moveNum) - ml.getY())); //Log the distance between the current position and the next position.
-	                moveNum++;
-	                lightsToMovesMap.put(ml, moveNum);
 	            }
 	        }
+		} //SWEEP
+		
+		else {
+			//GREEDY
 		} //GREEDY
-	
+		
 		return lights;
 	} //updateLights
 
