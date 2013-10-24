@@ -407,7 +407,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 			for (MoveableLight ml : mlights) {
 				//TODO: VISHWA, this movementMap.get(ml) isn't  being set correctly. we're only returning to the collector once now
 	            if(ml.getX() == getCollector().getX() && ml.getY() == getCollector().getY() /*&& !movementMap.get(ml)*/) { //If you've reached the collector, stay there for 15 moves
-	                if(ml.numMovesAtCollector >= 15) { //If you've stayed at the collector for 15 moves then time to move on
+	                if(ml.numMovesAtCollector >= 12) { //If you've stayed at the collector for 15 moves then time to move on
 	                    ml.hasFinishedPhaseOne = true;
 	                    ml.numMovesAtCollector = 0;
 	                    movementMap.put(ml, false); //This is a hashmap that tells us whether each light is currently on an A* path
@@ -1000,7 +1000,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
     }
     
     public boolean isNearAnotherLight(int i, int j, MoveableLight ml) { //Returns if the the mosquitos at this point are near another light (to avoid random bugs like one light moving to another light
-       for(MoveableLight other: mlights) {                              //unnecessarily because the other light would have already caught the mosquitos).
+       for(MoveableLight other: sweeplights) {                              //unnecessarily because the other light would have already caught the mosquitos).
             if(other.getLocation() != ml.getLocation()) {
                 Point2D.Double locationOfOther = (Point2D.Double) other.getLocation();
                 Point2D.Double locationOfMosquito = new Point2D.Double(i,j);
