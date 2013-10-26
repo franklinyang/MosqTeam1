@@ -19,7 +19,7 @@ import mosquito.sim.MoveableLight;
 import org.apache.log4j.Logger;
 import org.jgrapht.alg.CycleDetector;
 
-public class SweepPlayer extends mosquito.sim.Player {
+public class SweepPlayerFinal extends mosquito.sim.Player {
 
     class Section {
         Point2D ul;
