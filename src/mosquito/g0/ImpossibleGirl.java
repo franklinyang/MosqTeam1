@@ -199,9 +199,18 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 			
 			int collectorIndex = this.orderedSections.length / 2;
 			int sectionSize = (numberOfSections-1) / numLights;
-
-			this.collectorX = sections.get(this.orderedSections[collectorIndex]).midX;
-			this.collectorY = sections.get(this.orderedSections[collectorIndex]).midY;
+			
+			AreaMap map = generateAreaMap(board, walls);
+			int cX = sections.get(this.orderedSections[collectorIndex]).midX;
+			int cY = sections.get(this.orderedSections[collectorIndex]).midY;
+			if(map.getNode(cX, cY).isObstacle) {
+				this.collectorX = 90;
+				this.collectorY = 90;
+			}
+			else {
+				this.collectorX = sections.get(this.orderedSections[collectorIndex]).midX;
+				this.collectorY = sections.get(this.orderedSections[collectorIndex]).midY;
+			}
 			sections.get(this.orderedSections[collectorIndex]).visited = true;
 	
 			int distFromEnd = 0;
@@ -972,7 +981,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
         List<Point2D.Double> result = new ArrayList<Point2D.Double>();
         for(int i = 0; i < 100; i++) {
             for(int j = 0; j < 100; j++) {
-                if(i < 95 && (j < 48 || j > 52) && !isNearAnotherLight(i,j,ml)) { //If the mosquito isn't near the collector and it isn't near another light
+                if(i < this.getCollector().getX() && (j < 48 || j > 52) && !isNearAnotherLight(i,j,ml)) { //If the mosquito isn't near the collector and it isn't near another light
                     if(board[i][j] != 0) {
                         result.add(new Point2D.Double(i, j));
                     }
