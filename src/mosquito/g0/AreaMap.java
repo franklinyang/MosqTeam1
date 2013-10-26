@@ -1,6 +1,9 @@
 package mosquito.g0;
 
+import java.awt.geom.Line2D;
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -13,10 +16,11 @@ public class AreaMap {
 	private int startLocationY = 0;
 	private int goalLocationX = 0;
 	private int goalLocationY = 0;
+	private Set<Line2D> obstacles = null;
 
 	private Logger log = Logger.getLogger(this.getClass()); // for logging
 	
-	AreaMap(int mapWith, int mapHeight) {
+	public AreaMap(int mapWith, int mapHeight) {
 		this.mapWith = mapWith;
 		this.mapHeight = mapHeight;
 		
@@ -24,6 +28,17 @@ public class AreaMap {
 //		log.error("\tMap Created");
 		registerEdges();
 //		log.error("\tMap Node edges registered");
+	}
+	
+	public AreaMap(int mapWidth, int mapHeight, Set<Line2D> walls) {
+	    this.mapWith = mapWidth;
+        this.mapHeight = mapHeight;
+        this.obstacles = walls;
+        
+        createMap();
+//      log.error("\tMap Created");
+        registerEdges();
+//      log.error("\tMap Node edges registered");
 	}
 	private void createMap() {
 		map = new ArrayList<ArrayList<Node>>();
@@ -104,6 +119,17 @@ public class AreaMap {
 	}
 	
 	public float getDistanceBetween(Node node1, Node node2) {
+//	    if(obstacles != null) {
+//	        for(Line2D obstacle: obstacles) {
+//                Point2D.Double point1 = new Point2D.Double(node1.getX(), node1.getY());
+//                Point2D.Double point2 = new Point2D.Double(node2.getX(), node2.getY());
+//                Line2D.Double line = new Line2D.Double(point1, point2);
+//                if(obstacle.intersectsLine(line)) {
+//                    log.error("WOW FOUND OBSTACLE");
+//                    return 999999;
+//                }
+//            }
+//	    }
 		//if the nodes are on top or next to each other, return 1
 		if (node1.getX() == node2.getX() || node1.getY() == node2.getY()){
 			return 1;
