@@ -476,7 +476,7 @@ public class SweepPlayer extends mosquito.sim.Player {
 //                            for(Section section: mosquitoLocationsBeingUsed) {
 //                                log.error("lol: "+section);
 //                            }
-//                            if(!mosquitoLocationsBeingUsed.contains(currSection)) {
+                            if(!mosquitoLocationsBeingUsed.contains(currSection)) {
                                 furthestMosquitoLocation = mosquitoLocation;
                                 mosquitoLocationsBeingUsed.add(currSection);
                                 break;
@@ -573,7 +573,9 @@ public class SweepPlayer extends mosquito.sim.Player {
                 }
             }
         }
+        }
         return lights;
+        
     }
     
 //    public boolean doesPointHaveObstaclesAround(int x, int y) {
