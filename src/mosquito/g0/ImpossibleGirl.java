@@ -978,7 +978,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
         List<Point2D.Double> result = new ArrayList<Point2D.Double>();
         for(int i = 0; i < 100; i++) {
             for(int j = 0; j < 100; j++) {
-                if(i < 95 && (j < 48 || j > 52) && !isNearAnotherLight(i,j,ml)) { //If the mosquito isn't near the collector and it isn't near another light
+                if(i < this.getCollector().getX() && (j < 48 || j > 52) && !isNearAnotherLight(i,j,ml)) { //If the mosquito isn't near the collector and it isn't near another light
                     if(board[i][j] != 0) {
                         result.add(new Point2D.Double(i, j));
                     }
