@@ -90,6 +90,7 @@ public class SweepPlayer extends mosquito.sim.Player {
     private int phase = 0;
     private AStar astar;
     private int move = 0;
+    private int numMovesToFlushMosquitos = 0;
     
     private boolean canUseHeuristic = true;
     
@@ -242,6 +243,13 @@ public class SweepPlayer extends mosquito.sim.Player {
      * number of mosquitoes at coordinate (x, y)
      */
     public Set<Light> updateLights(int[][] board) {
+        if(numMovesToFlushMosquitos >= 40) {
+            numMovesToFlushMosquitos = 0;
+            mosquitoLocationsBeingUsed.clear();
+        }
+        else {
+            numMovesToFlushMosquitos++;
+        }
         for(MoveableLight ml: mlights) {
             if(ml.getX() == 97 && ml.getY() == 50) { //If you've reached the collector, stay there for 15 moves
                 if(ml.numMovesAtCollector >= 15) { //If you've stayed at the collector for 15 moves then time to move on
@@ -452,35 +460,23 @@ public class SweepPlayer extends mosquito.sim.Player {
                                 }
                             }
                         }
-                        for(int i = 0; i < 101; i++) {
-                            String line = "";
-                            for(int j = 0; j < 101; j++) {
-                                if(cleanMap.getNodes().get(j).get(i).isObstacle) {
-                                    line = line + "-";
-                                }
-                                else {
-                                    line = line + "+";
-                                }
-                            }
-                            log.error(line);
-                        }
                         Point2D.Double furthestMosquitoLocation = null;
                         for(Point2D.Double mosquitoLocation: mosquitoLocations) {
 //                            log.error("Furthest mosquito location = "+mosquitoLocation.getX()+","+mosquitoLocation.getY());
                             Section currSection = getSectionOfMosquito(mosquitoLocation);
-//                            log.error("It's section is = ("+currSection.ul.getX()+","+currSection.ur.getY()+"), "+
-//                                        "("+currSection.ur.getX()+","+currSection.ur.getY()+"), "+
-//                                        "("+currSection.bl.getX()+","+currSection.bl.getY()+"), "+
-//                                        "("+currSection.br.getX()+","+currSection.br.getY()+")");
-//                            log.error("Size of mosquitoLocationsBeingUsed = "+mosquitoLocationsBeingUsed.size());
-//                            for(Section section: mosquitoLocationsBeingUsed) {
-//                                log.error("lol: "+section);
-//                            }
+                            log.error("It's section is = ("+currSection.ul.getX()+","+currSection.ur.getY()+"), "+
+                                        "("+currSection.ur.getX()+","+currSection.ur.getY()+"), "+
+                                        "("+currSection.bl.getX()+","+currSection.bl.getY()+"), "+
+                                        "("+currSection.br.getX()+","+currSection.br.getY()+")");
+                            log.error("Size of mosquitoLocationsBeingUsed = "+mosquitoLocationsBeingUsed.size());
+                            for(Section section: mosquitoLocationsBeingUsed) {
+                                log.error("lol: "+section);
+                            }
                             if(!mosquitoLocationsBeingUsed.contains(currSection)) {
                                 furthestMosquitoLocation = mosquitoLocation;
                                 mosquitoLocationsBeingUsed.add(currSection);
                                 break;
-//                            }
+                            }
                         }       
                         if(furthestMosquitoLocation != null) {
                             FHeuristic fh = new FHeuristic();
@@ -573,9 +569,7 @@ public class SweepPlayer extends mosquito.sim.Player {
                 }
             }
         }
-        }
-        return lights;
-        
+        return lights; 
     }
     
 //    public boolean doesPointHaveObstaclesAround(int x, int y) {
