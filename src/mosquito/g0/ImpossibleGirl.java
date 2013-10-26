@@ -83,7 +83,7 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 		ArrayList<Line2D> lines = new ArrayList<Line2D>();
 		
 		//Choose which approach will initially be used to clear the board
-		if (walls.size() < 70) currentApproach = SECTION;
+		if (walls.size() < 60) currentApproach = SECTION;
 		else if (1==1) currentApproach = SWEEP;  //TODO: Define situations where sweeping is not optimal; ie, the board has many vertical barriers
 		else currentApproach = GREEDY;
 		
@@ -199,9 +199,15 @@ public class ImpossibleGirl extends mosquito.sim.Player {
 			
 			int collectorIndex = this.orderedSections.length / 2;
 			int sectionSize = (numberOfSections-1) / numLights;
+			
+			AreaMap map = generateAreaMap(board, walls);
 
 			this.collectorX = sections.get(this.orderedSections[collectorIndex]).midX;
 			this.collectorY = sections.get(this.orderedSections[collectorIndex]).midY;
+			while(map.getNodes().get(this.collectorX).get(this.collectorY).isObstacle) {
+				this.collectorX = sections.get(this.orderedSections[collectorIndex]).midX+1;
+				this.collectorY = sections.get(this.orderedSections[collectorIndex]).midY+1;
+			}
 			sections.get(this.orderedSections[collectorIndex]).visited = true;
 	
 			int distFromEnd = 0;
