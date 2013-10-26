@@ -20,15 +20,60 @@ import org.apache.log4j.Logger;
 import org.jgrapht.alg.CycleDetector;
 
 public class SweepPlayer extends mosquito.sim.Player {
-    
-    CycleDetector a;
 
+    class Section {
+        Point2D ul;
+        Point2D ur;
+        Point2D bl;
+        Point2D br;
+        
+        private Section(Point2D ul, Point2D ur, Point2D bl, Point2D br) {
+            this.ul = ul;
+            this.ur = ur;
+            this.bl = bl;
+            this.br = br;
+        }
+        
+        public boolean contains(Point2D x) {
+            if(x.getX() >= ul.getX() && x.getY() >= ul.getY()
+                    && x.getX() <= ur.getX() && x.getY() >= ur.getY()
+                    && x.getX() >= bl.getX() && x.getY() <= bl.getY()
+                    && x.getX() <= br.getX() && x.getY() <= br.getY()) {
+                return true;
+            }
+            return false;
+        }
+
+        public boolean equals(Section other) {
+            if(other.bl.getX() == this.bl.getX()
+                    && other.bl.getY() == this.bl.getY()
+                    && other.br.getX() == this.br.getX()
+                    && other.br.getY() == this.br.getY()
+                    && other.ul.getX() == this.ul.getX()
+                    && other.ul.getY() == this.ul.getY()
+                    && other.ur.getX() == this.ur.getX()
+                    && other.ur.getY() == this.ur.getY()) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+
+        @Override
+        public String toString() {
+            return new String(this.ul.getX()+","+this.ur.getY()+"), "+
+                    "("+this.ur.getX()+","+this.ur.getY()+"), "+
+                    "("+this.bl.getX()+","+this.bl.getY()+"), "+
+                    "("+this.br.getX()+","+this.br.getY()+")");
+        }
+        
+    }
     private int numLights;
     
     private Light[] allLights;
     private Point2D.Double lastLight;
     private Logger log = Logger.getLogger(this.getClass()); // for logging
-    private LinkedList<sweepSection> boardSections = new LinkedList<sweepSection>();
     
     @Override
     public String getName() {
@@ -46,9 +91,14 @@ public class SweepPlayer extends mosquito.sim.Player {
     private AStar astar;
     private int move = 0;
     
+    private boolean canUseHeuristic = true;
+    
     private HashMap<Integer, Integer> numLightsToSpacingMap = new HashMap<Integer, Integer>();
     private HashMap<MoveableLight, Boolean> movementMap = new HashMap<MoveableLight, Boolean>();
     private HashMap<MoveableLight, Integer> lightsToMovesMap = new HashMap<MoveableLight, Integer>();
+    
+    private LinkedList<Section> mosquitoLocationsBeingUsed = new LinkedList<Section>();
+    private HashSet<Section> sections = new HashSet<Section>();
     /*
      * This is called when a new game starts. It is passed the set
      * of lines that comprise the different walls, as well as the 
@@ -73,51 +123,39 @@ public class SweepPlayer extends mosquito.sim.Player {
         ArrayList<Line2D> extendedLines = new ArrayList<Line2D>();
         
         numLightsToSpacingMap.put(10, 9);
-        numLightsToSpacingMap.put(9, 7);
-        numLightsToSpacingMap.put(8, 8);
-        numLightsToSpacingMap.put(7, 10);
-        numLightsToSpacingMap.put(6, 13);
-        numLightsToSpacingMap.put(5, 18);
+        numLightsToSpacingMap.put(9, 9);
+        numLightsToSpacingMap.put(8, 11);
+        numLightsToSpacingMap.put(7, 13);
+        numLightsToSpacingMap.put(6, 15);
+        numLightsToSpacingMap.put(5, 17);
         numLightsToSpacingMap.put(4, 22);
         numLightsToSpacingMap.put(3, 33);
-        numLightsToSpacingMap.put(1, 22);
-        // creating game borders
-        Point2D.Double uR = new Point2D.Double(0, 100.0);
-        Point2D.Double uL = new Point2D.Double(0, 0);
-        Point2D.Double lL = new Point2D.Double(0, 100.0);
-        Point2D.Double lR = new Point2D.Double(100.0, 100.0);
+        numLightsToSpacingMap.put(2, 35);
+        numLightsToSpacingMap.put(1, 9);
         
-        Line2D l = new Line2D.Double(uL, lL);
-        Line2D r = new Line2D.Double(uR, lR);
-        Line2D u = new Line2D.Double(uL, uR);
-        Line2D d = new Line2D.Double(lL, lR);
-        
-        sweepSection boundary = new sweepSection(l, r, u, d);
-        ArrayList<Double> sortedVerticalLines = new ArrayList<Double>();
-        boardSections.add(boundary);
+        for(int i = 0; i < 100; i = i + 25) {
+            for(int j = 0; j < 100; j = j + 25) {
+                Point2D.Double ul = new Point2D.Double(i,j);
+                Point2D.Double ur = new Point2D.Double(i+25,j);
+                Point2D.Double bl = new Point2D.Double(i, j+25);
+                Point2D.Double br = new Point2D.Double(i+25, j+25);
+                lines.add(new Line2D.Double(ul, ur));
+                lines.add(new Line2D.Double(ul, bl));
+                lines.add(new Line2D.Double(bl, br));
+                lines.add(new Line2D.Double(ur, br));
+                sections.add(new Section(ul, ur, bl, br));
+            }
+        }
         
         for (Line2D w : walls) {
-            double x1 = w.getX1();
-            double x2 = w.getX2();
-            double y1 = w.getY1();
-            double y2 = w.getY2();
-            
-            // dealing with vertical lines first
-            if (w.getX1() == w.getX2()) {
-                verticalLines.add(new Line2D.Double(new Point2D.Double(x1, 0), new Point2D.Double(x1, 100)));
-                sortedVerticalLines.add(w.getX1());
-                continue;
+            if(w.getP1().getX() < 0.5 || w.getP1().getY() < 0.5 || w.getP1().getX() > 99.5 || w.getP1().getY() > 99.5
+                    || w.getP2().getX() < 0.5 || w.getP2().getY() < 0.5 || w.getP2().getX() > 99.5 || w.getP2().getY() > 99.5) {
+                canUseHeuristic = false;
+                break;
             }
-            
-            Point2D.Double mid = this.getMidpoint(w);
-            midpoints.add(mid);
         }
-        
-        // subdivide by vertical sections
-        for(int i = 0; i < verticalLines.size(); i++) {
-            // need to segment by vertical section...
-        }
-        
+        AreaMap cleanMap = new AreaMap(101,101, walls);
+        log.error("CAN USE HEURISTIC: "+canUseHeuristic);
         return lines;
     }
 
@@ -140,7 +178,7 @@ public class SweepPlayer extends mosquito.sim.Player {
         mlights = new HashSet<MoveableLight>();
         for(int a = 0; a<numLights; a++)
         {
-            AreaMap cleanMap = new AreaMap(101,101);
+            AreaMap cleanMap = new AreaMap(101,101, walls);
             for(int i = 0; i < board.length; i++) {
                 for(int j = 0; j < board[0].length; j++) {
                     for(Line2D wall: walls) {
@@ -161,6 +199,37 @@ public class SweepPlayer extends mosquito.sim.Player {
             mlights.add(l);
             movementMap.put(l, false);
         }
+        AreaMap cleanMap = new AreaMap(101, 101, walls);
+        for(int i = 0; i <= board.length; i++) {
+            for(int j = 0; j <= board[0].length; j++) {
+                for(Line2D wall: walls) {
+                    if(canUseHeuristic) {
+                        if(i > 1 && i < 99 && j > 1 && j < 99) {
+                            if(wall.ptSegDist(i, j) <= 1.0) {
+                                cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
+                            }
+                        }
+                    }
+                    else {
+                        if(wall.ptSegDist(i, j) <= 1.0 && i != 0 && j != 0 && i != 100 && j != 100) {
+                            cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
+                        }
+                    }
+                }
+            }
+        }
+        for(int i = 0; i < 101; i++) {
+            String line = "";
+            for(int j = 0; j < 101; j++) {
+                if(cleanMap.getNodes().get(j).get(i).isObstacle) {
+                    line = line + "-";
+                }
+                else {
+                    line = line + "+";
+                }
+            }
+            log.error(line);
+        }
         allLights = lights.toArray(new Light[numLights]);
         return lights;
     }
@@ -177,6 +246,9 @@ public class SweepPlayer extends mosquito.sim.Player {
             if(ml.getX() == 97 && ml.getY() == 50) { //If you've reached the collector, stay there for 15 moves
                 if(ml.numMovesAtCollector >= 15) { //If you've stayed at the collector for 15 moves then time to move on
                     ml.hasFinishedPhaseOne = true;
+                    ml.currDestinationX = 0;
+                    ml.currDestinationY = 0;
+                    ml.turnOff();
                     movementMap.put(ml, false); //This is a hashmap that tells us whether each light is currently on an A* path
                     lightsToMovesMap.put(ml, 0); //This hashmap tells us what move number is the current light in, in its A* path
                 }
@@ -187,38 +259,7 @@ public class SweepPlayer extends mosquito.sim.Player {
             }
             if(!ml.hasFinishedPhaseOne) { //If we are still sweeping from left to right (i.e Phase 1 of the strategy)
                 if(ml.getX() == 97 && !movementMap.get(ml)) { //If we've reached the right side of the board after sweeping from left to right AND we aren't on an A* path as it is
-                    log.error("REACHED THE OTHER SIDE !!!!!!!!");
-                    AreaMap cleanMap = new AreaMap(101,101);
-                    for(int i = 0; i <= board.length; i++) {
-                        for(int j = 0; j <= board[0].length; j++) {
-                            for(Line2D wall: walls) {
-                                if(wall.ptSegDist(i, j) < 2.0) { //Create our A* graph by marking something as an obstacle if it's within 2 units of distance
-                                    cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
-                                }
-                            }
-                        }
-                    }
-                    FHeuristic fh = new FHeuristic();
-                    astar = new AStar(cleanMap, fh);
-                    astar.calcShortestPath((int)ml.getX(), (int) ml.getY(), 97, 50); //Compute the A* path from here to the collector
-                    ml.currDestinationX = 97;
-                    ml.currDestinationY = 50;
-                    ml.shortestPath = astar.shortestPath;
-                    movementMap.put(ml, true);
-                    log.error("Current x: "+ml.getX());
-                    log.error("Current y: "+ml.getY());
-                    if(ml.shortestPath != null) {
-                        log.error("Moving to x = "+ml.shortestPath.getX(0));
-                        log.error("Moving to y = "+ml.shortestPath.getY(0));
-                        ml.moveTo(ml.shortestPath.getX(0), ml.shortestPath.getY(0)); //Move once in the A* path to initiate the A* movement sequence
-                        lightsToMovesMap.put(ml, 1);
-                    }
-                    // THIS IS A HACK!!!!! 
-                    // ANYONE WHO READS THIS MUST KNOW THAT IF YOU DO SUCH THINGS IN REAL WORLD PROJECTS 
-                    // KITTENS WILL DIE SPONTANEOUSLY
-                    else {
-                        ml.turnOff();
-                    }
+                    handlePhaseOneCompletion(ml, board);
                     continue;
                 }
                 if(ml.hasStoppedAtCorner) { //Code to ensure that we only stop at a corner once to wait for mosquitos to catch up
@@ -231,8 +272,8 @@ public class SweepPlayer extends mosquito.sim.Player {
                 boolean hasMovedThisTurn = false; //Boolean variable to ensure that a light can only enter a critical code section, i.e where movement occurs, once.
                 if(ml.numMovesSinceStopped == 0) { //Check to see if we need to stop at a corner assuming we haven't seen a corner in the last 25 moves
                     for(Line2D obstacle: walls) {
-                        if(!ml.hasStoppedAtCorner && (obstacle.getP1().distance(ml.getLocation()) < 3 || obstacle.getP2().distance(ml.getLocation()) < 3)) {
-                            if(ml.numTurnsAtCorner >= 10) { //Wait for obstacle for 10 moves
+                        if(!ml.hasStoppedAtCorner && (obstacle.getP1().distance(ml.getLocation()) < 4 || obstacle.getP2().distance(ml.getLocation()) < 4)) {
+                            if(ml.numTurnsAtCorner >= 18) { //Wait for obstacle for 10 moves
                                 ml.numTurnsAtCorner = 0;
                                 ml.hasStoppedAtCorner = true;
                                 ml.numMovesSinceStopped = 1;
@@ -247,33 +288,58 @@ public class SweepPlayer extends mosquito.sim.Player {
                 }
                 if(ml.getX() == ml.currDestinationX && ml.getY() == ml.currDestinationY) { //If the light has reached its A* destination in our left to right sweep
                     log.error("4");
-                    if(!hasMovedThisTurn) {
-                        movementMap.put(ml, false);
-                        lightsToMovesMap.put(ml, 0);
-                        ml.moveRight();
-                        hasMovedThisTurn = true;
+                    if(ml.getX() > 95) {
+                        log.error("PHASE ONE COMPLETED");
+                        handlePhaseOneCompletion(ml, board);
+                    }
+                    else {
+                        if(!hasMovedThisTurn) {
+                            log.error("PHASE ONE NOT COMPLETED YET");
+                            movementMap.put(ml, false);
+                            lightsToMovesMap.put(ml, 0);
+                            ml.moveRight();
+                            hasMovedThisTurn = true;
+                        }
                     }
                 }
                 else if(!movementMap.get(ml)) { // If the light isn't currently moving on an A* path
                     boolean hasHitWall = false;
                     for(Line2D obstacle: walls) { //Check for obstacles and see if we are near an obstacle
-                        if(obstacle.ptSegDistSq(ml.getX(), ml.getY()) <= 4.0) { //We've detected an obstacle 
+                        if(obstacle.ptSegDistSq(ml.getX(), ml.getY()) <= 2.0) { //We've detected an obstacle 
                             log.error("ENTERED BAD AREA!!! : "+ml);
                             hasHitWall = true;
-                            AreaMap cleanMap = new AreaMap(101,101);
+                            AreaMap cleanMap = new AreaMap(101,101, walls);
+//                            for(int i = 0; i < board.length; i++) {
+//                                for(int j = 0; j <= board[0].length; j++) {
+//                                    for(Line2D wall: walls) {
+//                                        if(wall.ptSegDist(i, j) <= 1.0) {
+//                                            cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
+//                                        }
+//                                    }
+//                                }
+//                            }
                             for(int i = 0; i <= board.length; i++) {
                                 for(int j = 0; j <= board[0].length; j++) {
                                     for(Line2D wall: walls) {
-                                        if(wall.ptSegDist(i, j) < 4.0) {
-                                            cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
+                                        if(canUseHeuristic) {
+                                            if(i > 1 && i < 99 && j > 1 && j < 99) {
+                                                if(wall.ptSegDist(i, j) <= 1.0) {
+                                                    cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
+                                                }
+                                            }
+                                        }
+                                        else {
+                                            if(wall.ptSegDist(i, j) <= 1.0) {
+                                                cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
+                                            }
                                         }
                                     }
                                 }
                             }
                             FHeuristic fh = new FHeuristic();
                             astar = new AStar(cleanMap, fh);
-                            int xCoordToMoveTo = 0;
-                            for(int i = (int) ml.getX() + 2; i < 101; i++) {
+                            int xCoordToMoveTo = (int) ml.getX() + 3;
+                            for(int i = xCoordToMoveTo; i < 101; i++) {
                                 if(!cleanMap.getNodes().get(i).get((int)ml.getY()).isObstacle) {
                                     xCoordToMoveTo = i;
                                     break;
@@ -284,17 +350,16 @@ public class SweepPlayer extends mosquito.sim.Player {
                             ml.currDestinationY = ml.getY();
                             ml.shortestPath = astar.shortestPath;
                             movementMap.put(ml, true);
-                            log.error("Current x: "+ml.getX());
-                            log.error("Current y: "+ml.getY());
+                            log.error("Curr x: "+ml.getX());
+                            log.error("xCoordtoMoveTo: "+xCoordToMoveTo);
+//                            log.error("Current x: "+ml.getX());
+//                            log.error("Current y: "+ml.getY());
                             if(ml.shortestPath != null && !hasHitWall) {
-                                log.error("Moving to x = "+ml.shortestPath.getX(0));
-                                log.error("Moving to y = "+ml.shortestPath.getY(0));
+//                                log.error("Moving to x = "+ml.shortestPath.getX(0));
+//                                log.error("Moving to y = "+ml.shortestPath.getY(0));
                                 ml.moveTo(ml.shortestPath.getX(0), ml.shortestPath.getY(0));
                                 lightsToMovesMap.put(ml, 1);
                             }
-                            // THIS IS A HACK!!!!! 
-                            // ANYONE WHO READS THIS MUST KNOW THAT IF YOU DO SUCH THINGS IN REAL WORLD PROJECTS 
-                            // KITTENS WILL DIE SPONTANEOUSLY
                             else if(ml.shortestPath == null){
                                 ml.turnOff();
                             }
@@ -328,10 +393,10 @@ public class SweepPlayer extends mosquito.sim.Player {
                     else { //If we are still on our A* path then move to the next position in the A* path
                         if(!hasMovedThisTurn) {
                             int moveNum = lightsToMovesMap.get(ml);
-                            log.error("CURR: x = "+ml.getX()+ " y = "+ml.getY());
-                            log.error("PATH: x = "+ml.shortestPath.getX(moveNum)+" y = "+ml.shortestPath.getY(moveNum));//Log the place we are moving to
+//                            log.error("CURR: x = "+ml.getX()+ " y = "+ml.getY());
+//                            log.error("PATH: x = "+ml.shortestPath.getX(moveNum)+" y = "+ml.shortestPath.getY(moveNum));//Log the place we are moving to
                             ml.moveTo(ml.shortestPath.getX(moveNum), ml.shortestPath.getY(moveNum));
-                            log.error(ml +"   distance: x = "+(ml.shortestPath.getX(moveNum) - ml.getX())+" y = "+(ml.shortestPath.getY(moveNum) - ml.getY())); //Log the distance between the current position and the next position.
+//                            log.error(ml +"   distance: x = "+(ml.shortestPath.getX(moveNum) - ml.getX())+" y = "+(ml.shortestPath.getY(moveNum) - ml.getY())); //Log the distance between the current position and the next position.
                             moveNum++;
                             lightsToMovesMap.put(ml, moveNum);
                             hasMovedThisTurn = true;
@@ -340,53 +405,140 @@ public class SweepPlayer extends mosquito.sim.Player {
                 }
             }
             else { //If we've finished phase one (i.e reached the collector once) then do this
+                if(ml.getLocation().distance(new Point2D.Double(ml.currDestinationX, ml.currDestinationY)) < 5) {
+                    ml.turnOn();
+                }
+                if(ml.getX() == 97 && ml.getY() == 50) { //If you've reached the collector, stay there for 15 moves
+                    log.error("REACHED COLLECTOR IN PHASE 2!");
+                    if(ml.numMovesAtCollector >= 15) { //If you've stayed at the collector for 15 moves then time to move on
+                        ml.turnOff();
+                        ml.numMovesAtCollector = 0;
+                        movementMap.put(ml, false); //This is a hashmap that tells us whether each light is currently on an A* path
+                        lightsToMovesMap.put(ml, 0); //This hashmap tells us what move number is the current light in, in its A* path
+                    }
+                    else {
+                        ml.numMovesAtCollector++; //If you haven't stayed for 15 moves yet, stay put and increement your movesAtCollector
+                        continue;
+                    }
+                }
                 if(!movementMap.get(ml)) { // If we aren't on an A* path
                     List<Point2D.Double> mosquitoLocations = getMosquitoLocationsByDistance(board, ml); //Get locations of all the mosquitos ordered in descending order by distance
                     if(!mosquitoLocations.isEmpty()) {
-                        AreaMap cleanMap = new AreaMap(101,101);
+                        AreaMap cleanMap = new AreaMap(101,101, walls);
+//                        for(int i = 0; i <= board.length; i++) {
+//                          for(int j = 0; j <= board[0].length; j++) {
+//                              for(Line2D wall: walls) {
+//                                  if(wall.ptSegDist(i, j) <= 1.0) {
+//                                      cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
+//                                  }
+//                              }
+//                          }
+//                      }
                         for(int i = 0; i <= board.length; i++) {
                             for(int j = 0; j <= board[0].length; j++) {
                                 for(Line2D wall: walls) {
-                                    if(wall.ptSegDist(i, j) < 2.0) {
-                                        cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
+                                    if(canUseHeuristic) {
+                                        if(i > 1 && i < 99 && j > 1 && j < 99) {
+                                            if(wall.ptSegDist(i, j) <= 1.0) {
+                                                cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
+                                            }
+                                        }
+                                    }
+                                    else {
+                                        if(wall.ptSegDist(i, j) <= 1.0 && i != 0 && j != 0 && i != 100 && j != 100) {
+                                            cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
+                                        }
                                     }
                                 }
                             }
                         }
-                        FHeuristic fh = new FHeuristic();
-                        astar = new AStar(cleanMap, fh);
-                        astar.calcShortestPath((int)ml.getX(),    //Calculate a* path to the farthest mosquito
-                                (int) ml.getY(), 
-                                (int)mosquitoLocations.get(0).getX(), 
-                                (int)mosquitoLocations.get(0).getY());
-                        ml.currDestinationX = mosquitoLocations.get(0).getX(); 
-                        ml.currDestinationY = mosquitoLocations.get(0).getY();
-                        ml.shortestPath = astar.shortestPath;
-                        movementMap.put(ml, true);
-                        log.error("Current x: "+ml.getX());
-                        log.error("Current y: "+ml.getY());
-                        if(ml.shortestPath != null) {
-                            log.error("Moving to x = "+ml.shortestPath.getX(0)); //Start moving towards farthest mosquito
-                            log.error("Moving to y = "+ml.shortestPath.getY(0));
-                            ml.moveTo(ml.shortestPath.getX(0), ml.shortestPath.getY(0));
-                            lightsToMovesMap.put(ml, 1);
+                        for(int i = 0; i < 101; i++) {
+                            String line = "";
+                            for(int j = 0; j < 101; j++) {
+                                if(cleanMap.getNodes().get(j).get(i).isObstacle) {
+                                    line = line + "-";
+                                }
+                                else {
+                                    line = line + "+";
+                                }
+                            }
+                            log.error(line);
+                        }
+                        Point2D.Double furthestMosquitoLocation = null;
+                        for(Point2D.Double mosquitoLocation: mosquitoLocations) {
+//                            log.error("Furthest mosquito location = "+mosquitoLocation.getX()+","+mosquitoLocation.getY());
+                            Section currSection = getSectionOfMosquito(mosquitoLocation);
+//                            log.error("It's section is = ("+currSection.ul.getX()+","+currSection.ur.getY()+"), "+
+//                                        "("+currSection.ur.getX()+","+currSection.ur.getY()+"), "+
+//                                        "("+currSection.bl.getX()+","+currSection.bl.getY()+"), "+
+//                                        "("+currSection.br.getX()+","+currSection.br.getY()+")");
+//                            log.error("Size of mosquitoLocationsBeingUsed = "+mosquitoLocationsBeingUsed.size());
+//                            for(Section section: mosquitoLocationsBeingUsed) {
+//                                log.error("lol: "+section);
+//                            }
+//                            if(!mosquitoLocationsBeingUsed.contains(currSection)) {
+                                furthestMosquitoLocation = mosquitoLocation;
+                                mosquitoLocationsBeingUsed.add(currSection);
+                                break;
+//                            }
+                        }       
+                        if(furthestMosquitoLocation != null) {
+                            FHeuristic fh = new FHeuristic();
+                            astar = new AStar(cleanMap, fh);
+                            astar.calcShortestPath((int)ml.getX(),    //Calculate a* path to the farthest mosquito
+                                    (int) ml.getY(), 
+                                    (int)furthestMosquitoLocation.getX(), 
+                                    (int)furthestMosquitoLocation.getY());
+                            ml.currDestinationX = furthestMosquitoLocation.getX(); 
+                            ml.currDestinationY = furthestMosquitoLocation.getY();
+                            ml.shortestPath = astar.shortestPath;
+                            movementMap.put(ml, true);
+//                            log.error("Current x: "+ml.getX());
+//                            log.error("Current y: "+ml.getY());
+                            if(ml.shortestPath != null) {
+//                                log.error("Moving to x = "+ml.shortestPath.getX(0)); //Start moving towards farthest mosquito
+//                                log.error("Moving to y = "+ml.shortestPath.getY(0));
+                                log.error("SHORTEST PATH WAS FOUND");
+                                ml.moveTo(ml.shortestPath.getX(0), ml.shortestPath.getY(0));
+                                lightsToMovesMap.put(ml, 1);
+                            }
                         }
                     }
                 }
                 else if(ml.getX() == ml.currDestinationX && ml.getY() == ml.currDestinationY) { //Once we've reached the farthest mosquito we now go back to the collector
+                    Section section = getSectionOfMosquito(new Point2D.Double(ml.getX(), ml.getY()));
+                    if(!mosquitoLocationsBeingUsed.remove(section)) {
+                        log.error("LOCATION BEING REMOVED NOT FOUND");
+                    }
+                    ml.turnOn();
                     movementMap.put(ml, true);
                     ml.currDestinationX = 0;
                     ml.currDestinationY = 0;
                     lightsToMovesMap.put(ml, 0);
-                    AreaMap cleanMap = new AreaMap(101,101);
+                    AreaMap cleanMap = new AreaMap(101,101, walls);
+//                    for(int i = 0; i < board.length; i++) {
+//                        for(int j = 0; j <= board[0].length; j++) {
+//                            for(Line2D wall: walls) {
+//                                if(wall.ptSegDist(i, j) <= 1.0) {
+//                                    cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
+//                                }
+//                            }
+//                        }
+//                    }
                     for(int i = 0; i <= board.length; i++) {
                         for(int j = 0; j <= board[0].length; j++) {
                             for(Line2D wall: walls) {
-                                if(wall.ptSegDist(i, j) < 2.0) {
-                                    if(i==99 && j==50) {
-                                        log.error("REMOVE IMPORTANT NODE!!!");
+                                if(canUseHeuristic) {
+                                    if(i > 1 && i < 99 && j > 1 && j < 99) {
+                                        if(wall.ptSegDist(i, j) <= 1.0) {
+                                            cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
+                                        }
                                     }
-                                    cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
+                                }
+                                else {
+                                    if(wall.ptSegDist(i, j) <= 1.0 && i != 0 && j != 0 && i != 100 && j != 100) {
+                                        cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
+                                    }
                                 }
                             }
                         }
@@ -398,11 +550,11 @@ public class SweepPlayer extends mosquito.sim.Player {
                     ml.currDestinationY = 50;
                     ml.shortestPath = astar.shortestPath;
                     movementMap.put(ml, true);
-                    log.error("Current x: "+ml.getX());
-                    log.error("Current y: "+ml.getY());
+//                    log.error("Current x: "+ml.getX());
+//                    log.error("Current y: "+ml.getY());
                     if(ml.shortestPath != null) {
-                        log.error("Moving to x = "+ml.shortestPath.getX(0));
-                        log.error("Moving to y = "+ml.shortestPath.getY(0));
+//                        log.error("Moving to x = "+ml.shortestPath.getX(0));
+//                        log.error("Moving to y = "+ml.shortestPath.getY(0));
                         ml.moveTo(ml.shortestPath.getX(0), ml.shortestPath.getY(0));
                         lightsToMovesMap.put(ml, 1);
                     }
@@ -410,16 +562,87 @@ public class SweepPlayer extends mosquito.sim.Player {
                 }
                 else { //If we haven't reached the furthest mosquito then continue moving towards it using the A* path
                     int moveNum = lightsToMovesMap.get(ml);
-                    log.error("CURR: x = "+ml.getX()+ " y = "+ml.getY());
-                    log.error("PATH: x = "+ml.shortestPath.getX(moveNum)+" y = "+ml.shortestPath.getY(moveNum));//Log the place we are moving to
-                    ml.moveTo(ml.shortestPath.getX(moveNum), ml.shortestPath.getY(moveNum));
-                    log.error(ml +"   distance: x = "+(ml.shortestPath.getX(moveNum) - ml.getX())+" y = "+(ml.shortestPath.getY(moveNum) - ml.getY())); //Log the distance between the current position and the next position.
-                    moveNum++;
-                    lightsToMovesMap.put(ml, moveNum);
+//                    log.error("CURR: x = "+ml.getX()+ " y = "+ml.getY());
+//                    log.error("PATH: x = "+ml.shortestPath.getX(moveNum)+" y = "+ml.shortestPath.getY(moveNum));//Log the place we are moving to
+                    if(moveNum < ml.shortestPath.getLength()) {
+                        ml.moveTo(ml.shortestPath.getX(moveNum), ml.shortestPath.getY(moveNum));
+    //                    log.error(ml +"   distance: x = "+(ml.shortestPath.getX(moveNum) - ml.getX())+" y = "+(ml.shortestPath.getY(moveNum) - ml.getY())); //Log the distance between the current position and the next position.
+                        moveNum++;
+                        lightsToMovesMap.put(ml, moveNum);
+                    }
                 }
             }
         }
         return lights;
+    }
+    
+//    public boolean doesPointHaveObstaclesAround(int x, int y) {
+//        for(Line2D wall: walls) {
+//           Line2D  
+//        }
+//    }
+    
+    public Section getSectionOfMosquito(Point2D.Double mosq) {
+        for(Section section: sections) {
+            log.error("Section: "+section);
+            if(section.contains(mosq)) {
+                log.error("SECTION CHOSEN!");
+                return section;
+            }
+        }
+        return null;
+    }
+    
+    public void handlePhaseOneCompletion(MoveableLight ml, int[][] board) {
+        AreaMap cleanMap = new AreaMap(101,101, walls);
+//        for(int i = 0; i < board.length; i++) {
+//            for(int j = 0; j <= board[0].length; j++) {
+//                for(Line2D wall: walls) {
+//                    if(wall.ptSegDist(i, j) <= 1.0) {
+//                        cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
+//                    }
+//                }
+//            }
+//        }
+        for(int i = 0; i <= board.length; i++) {
+            for(int j = 0; j <= board[0].length; j++) {
+                for(Line2D wall: walls) {
+                    if(canUseHeuristic) {
+                        if(i > 1 && i < 99 && j > 1 && j < 99) {
+                            if(wall.ptSegDist(i, j) <= 1.0) {
+                                cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
+                            }
+                        }
+                    }
+                    else {
+                        if(wall.ptSegDist(i, j) <= 1.0) {
+                            cleanMap.getNodes().get(i).get(j).isObstacle = true; // nay on the current node
+                        }
+                    }
+                }
+            }
+        }
+        FHeuristic fh = new FHeuristic();
+        astar = new AStar(cleanMap, fh);
+        astar.calcShortestPath((int)ml.getX(), (int) ml.getY(), 97, 50); //Compute the A* path from here to the collector
+        ml.currDestinationX = 97;
+        ml.currDestinationY = 50;
+        ml.shortestPath = astar.shortestPath;
+        movementMap.put(ml, true);
+//        log.error("Current x: "+ml.getX());
+//        log.error("Current y: "+ml.getY());
+        if(ml.shortestPath != null) {
+//            log.error("Moving to x = "+ml.shortestPath.getX(0));
+//            log.error("Moving to y = "+ml.shortestPath.getY(0));
+            ml.moveTo(ml.shortestPath.getX(0), ml.shortestPath.getY(0)); //Move once in the A* path to initiate the A* movement sequence
+            lightsToMovesMap.put(ml, 1);
+        }
+        // THIS IS A HACK!!!!! 
+        // ANYONE WHO READS THIS MUST KNOW THAT IF YOU DO SUCH THINGS IN REAL WORLD PROJECTS 
+        // KITTENS WILL DIE SPONTANEOUSLY
+        else {
+            ml.turnOff();
+        }
     }
     
     public List<Point2D.Double> getMosquitoLocationsByDistance(int[][] board, MoveableLight ml) {
